@@ -62,4 +62,9 @@ public class PageController {
     public String inventoryManagerPage() {
         return "dashboard";
     }
+
+    @GetMapping("/office-staff")
+    public String officeStaffPage() {
+        return "dashboard";
+    }
 }

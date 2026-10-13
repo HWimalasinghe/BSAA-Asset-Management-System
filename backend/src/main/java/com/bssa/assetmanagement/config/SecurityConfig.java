@@ -27,16 +27,26 @@ public class SecurityConfig {
                     "/images/**",
                     "/api/health"
                 ).permitAll()
-                .requestMatchers("/admin/**")
+
+                .requestMatchers("/admin", "/admin/**")
                     .hasRole("SYSTEM_ADMIN")
-                .requestMatchers("/inventory-admin/**")
+
+                .requestMatchers("/inventory-admin", "/inventory-admin/**")
                     .hasAnyRole("SYSTEM_ADMIN", "INVENTORY_ADMIN")
-                .requestMatchers("/inventory-manager/**")
+
+                .requestMatchers("/inventory-manager", "/inventory-manager/**")
                     .hasAnyRole(
                         "SYSTEM_ADMIN",
                         "INVENTORY_ADMIN",
                         "INVENTORY_MANAGER"
                     )
+
+                .requestMatchers("/office-staff", "/office-staff/**")
+                    .hasAnyRole(
+                        "SYSTEM_ADMIN",
+                        "OFFICE_STAFF"
+                    )
+
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
