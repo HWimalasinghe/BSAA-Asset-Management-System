@@ -24,7 +24,12 @@
     <main class="page-content">
         <section class="welcome">
             <p class="eyebrow">ASSET MANAGEMENT SYSTEM</p>
-            <h1>Welcome to your dashboard</h1>
+
+            <h1>
+                Welcome,
+                <span th:text="${userFullName}">System Administrator</span>
+            </h1>
+
             <p>Manage organizational assets, requests, and inventory activities from one place.</p>
 
             <div class="user-details">
@@ -32,6 +37,7 @@
                     <strong>Email:</strong>
                     <span th:text="${userEmail}">user@example.com</span>
                 </p>
+
                 <p>
                     <strong>Role:</strong>
                     <span th:text="${userRole}">SYSTEM_ADMIN</span>
