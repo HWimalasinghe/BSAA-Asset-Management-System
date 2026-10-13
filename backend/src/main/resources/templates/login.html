@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | BSSA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/login.css}">
+</head>
+<body>
+    <main class="login-container">
+        <section class="login-card">
+            <div class="brand">
+                <div class="brand-icon">B</div>
+                <p class="brand-name">BSSA</p>
+                <h1>Asset Management</h1>
+                <p class="subtitle">Sign in to manage your organization's assets.</p>
+            </div>
+
+            <div class="alert error" th:if="${param.error}">
+                Invalid email or password, or your account is disabled.
+                Please try again.
+            </div>
+
+            <div class="alert success" th:if="${param.logout}">
+                You have been signed out successfully.
+            </div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="form-group">
+                    <label for="username">Email address</label>
+                    <input
+                        type="email"
+                        id="username"
+                        name="username"
+                        placeholder="name@company.com"
+                        autocomplete="username"
+                        required
+                        autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required>
+                </div>
+
+                <button type="submit">Sign in</button>
+            </form>
+
+            <p class="security-note">
+                Authorized personnel only. Your access is protected.
+            </p>
+        </section>
+
+        <footer>
+            &copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2026</span>
+            BSSA Asset Management System
+        </footer>
+    </main>
+</body>
+</html>

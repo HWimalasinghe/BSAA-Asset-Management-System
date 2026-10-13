@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">ASSET MANAGEMENT SYSTEM</p>
+            <h1>Welcome to your dashboard</h1>
+            <p>Manage organizational assets, requests, and inventory activities from one place.</p>
+
+            <div class="user-details">
+                <p>
+                    <strong>Email:</strong>
+                    <span th:text="${userEmail}">user@example.com</span>
+                </p>
+                <p>
+                    <strong>Role:</strong>
+                    <span th:text="${userRole}">SYSTEM_ADMIN</span>
+                </p>
+            </div>
+        </section>
+
+
+        <section class="summary-grid">
+            <article class="summary-card">
+                <span class="card-number">01</span>
+                <h2>Property Inventory</h2>
+                <p>View and manage registered organizational properties.</p>
+                <span class="status">Coming soon</span>
+            </article>
+
+            <article class="summary-card">
+                <span class="card-number">02</span>
+                <h2>Property Requests</h2>
+                <p>Submit and review requests for assets and equipment.</p>
+                <span class="status">Coming soon</span>
+            </article>
+
+            <article class="summary-card">
+                <span class="card-number">03</span>
+                <h2>Assignments &amp; Returns</h2>
+                <p>Track issued properties and returned equipment.</p>
+                <span class="status">Coming soon</span>
+            </article>
+
+            <article class="summary-card">
+                <span class="card-number">04</span>
+                <h2>User Management</h2>
+                <p>Manage employee accounts and access permissions.</p>
+                <span class="status">Coming soon</span>
+            </article>
+        </section>
+
+        <section class="account-panel">
+            <div>
+                <h2>Account access</h2>
+                <p>You are signed in to the BSAA Asset Management System.</p>
+            </div>
+            <span class="secure-label">Protected session</span>
+        </section>
+
+        <footer>
+            BSAA Asset Management System
+        </footer>
+    </main>
+</body>
+</html>
