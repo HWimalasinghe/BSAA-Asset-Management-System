@@ -36,6 +36,28 @@ public class DepartmentController {
         return "departments/form";
     }
 
+    @GetMapping("/edit")
+    public String showEditForm(
+            @RequestParam Long id,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        Department department = departmentRepository.findById(id)
+                .orElse(null);
+
+        if (department == null) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Department not found."
+            );
+            return "redirect:/departments";
+        }
+
+        model.addAttribute("department", department);
+
+        return "departments/edit-form";
+    }
+
     @PostMapping
     public String createDepartment(
             @RequestParam String name,
@@ -73,6 +95,63 @@ public class DepartmentController {
         redirectAttributes.addFlashAttribute(
                 "successMessage",
                 "Department created successfully."
+        );
+
+        return "redirect:/departments";
+    }
+
+    @PostMapping("/update")
+    public String updateDepartment(
+            @RequestParam Long id,
+            @RequestParam String name,
+            @RequestParam(required = false) String description,
+            RedirectAttributes redirectAttributes) {
+
+        Department department = departmentRepository.findById(id)
+                .orElse(null);
+
+        if (department == null) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Department not found."
+            );
+            return "redirect:/departments";
+        }
+
+        String trimmedName = name.trim();
+
+        if (trimmedName.isEmpty()) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Department name is required."
+            );
+            return "redirect:/departments/edit?id=" + id;
+        }
+
+        if (departmentRepository
+                .existsByNameIgnoreCaseAndDepartmentIdNot(
+                        trimmedName,
+                        id)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "A department with this name already exists."
+            );
+            return "redirect:/departments/edit?id=" + id;
+        }
+
+        department.setName(trimmedName);
+
+        if (description != null && !description.isBlank()) {
+            department.setDescription(description.trim());
+        } else {
+            department.setDescription(null);
+        }
+
+        departmentRepository.save(department);
+
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                "Department updated successfully."
         );
 
         return "redirect:/departments";

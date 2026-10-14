@@ -1,3 +1,4 @@
+/* Department directory panel */
 .department-panel {
     padding: 26px;
     border: 1px solid #e2e8f1;
@@ -6,6 +7,7 @@
     box-shadow: 0 6px 20px rgba(22, 39, 75, 0.035);
 }
 
+/* Directory heading and actions */
 .section-heading {
     display: flex;
     align-items: center;
@@ -27,7 +29,19 @@
     line-height: 1.6;
 }
 
+.department-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.department-actions .primary-button {
+    text-decoration: none;
+}
+
 .back-link {
+    display: inline-block;
     flex-shrink: 0;
     padding: 10px 14px;
     border: 1px solid #d4dce8;
@@ -43,6 +57,7 @@
     background: #f0f4fa;
 }
 
+/* Department table */
 .table-wrapper {
     width: 100%;
     overflow-x: auto;
@@ -81,6 +96,18 @@
     border-bottom: none;
 }
 
+.department-link {
+    display: inline-block;
+    color: #2f65ad;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.department-link:hover {
+    text-decoration: underline;
+}
+
 .department-status {
     display: inline-block;
     padding: 5px 9px;
@@ -105,6 +132,100 @@
     text-align: center;
 }
 
+/* Department forms */
+.department-form {
+    width: 100%;
+    max-width: 680px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 22px;
+}
+
+.form-field label {
+    color: #1b355b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.form-field input,
+.form-field textarea {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d4dce8;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #172033;
+    font: inherit;
+    font-size: 14px;
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+    outline: none;
+    border-color: #2f65ad;
+    box-shadow: 0 0 0 3px rgba(47, 101, 173, 0.12);
+}
+
+.form-field textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.primary-button {
+    display: inline-block;
+    padding: 11px 17px;
+    border: 1px solid #173b72;
+    border-radius: 8px;
+    background: #173b72;
+    color: #ffffff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.primary-button:hover {
+    background: #214e8e;
+}
+
+/* Success and error feedback */
+.feedback-message {
+    margin: 0 0 20px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.success-message {
+    border: 1px solid #b8e2c9;
+    background: #e6f5ec;
+    color: #246b45;
+}
+
+.error-message {
+    border: 1px solid #f0c5c8;
+    background: #fcebec;
+    color: #a63d46;
+}
+
+/* Responsive layout */
 @media (max-width: 650px) {
     .department-panel {
         padding: 18px;
@@ -113,6 +234,16 @@
     .section-heading {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .department-actions {
+        width: 100%;
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .department-actions > a {
+        text-align: center;
     }
 
     .back-link {
@@ -124,121 +255,15 @@
         padding: 12px 10px;
     }
 
-    .department-form {
-        max-width: 680px;
-    }
-
-    .form-field {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-bottom: 22px;
-    }
-
-    .form-field label {
-        color: #1b355b;
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .form-field input,
-    .form-field textarea {
-        width: 100%;
-        padding: 12px 14px;
-        border: 1px solid #d4dce8;
-        border-radius: 8px;
-        background: #ffffff;
-        color: #172033;
-        font: inherit;
-        font-size: 14px;
-    }
-
-    .form-field input:focus,
-    .form-field textarea:focus {
-        outline: none;
-        border-color: #2f65ad;
-        box-shadow: 0 0 0 3px rgba(47, 101, 173, 0.12);
-    }
-
-    .form-field textarea {
-        resize: vertical;
-        min-height: 100px;
-    }
-
     .form-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-top: 28px;
+        align-items: stretch;
+        flex-direction: column;
     }
 
-    .primary-button {
-        padding: 11px 17px;
-        border: 1px solid #173b72;
-        border-radius: 8px;
-        background: #173b72;
-        color: #ffffff;
-        font: inherit;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    .primary-button:hover {
-        background: #214e8e;
-    }
-
-    @media (max-width: 650px) {
-        .form-actions {
-            align-items: stretch;
-            flex-direction: column;
-        }
-
-        .form-actions .primary-button,
-        .form-actions .back-link {
-            text-align: center;
-        }
-    }
-
-    .feedback-message {
-        margin: 0 0 20px;
-        padding: 12px 14px;
-        border-radius: 8px;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .success-message {
-        border: 1px solid #b8e2c9;
-        background: #e6f5ec;
-        color: #246b45;
-    }
-
-    .error-message {
-        border: 1px solid #f0c5c8;
-        background: #fcebec;
-        color: #a63d46;
-    }
-
-    .department-actions {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .department-actions .primary-button {
-        text-decoration: none;
-    }
-
-    @media (max-width: 650px) {
-        .department-actions {
-            align-items: stretch;
-            flex-direction: column;
-        }
-
-        .department-actions > a {
-            text-align: center;
-        }
+    .form-actions .primary-button,
+    .form-actions .back-link {
+        box-sizing: border-box;
+        width: 100%;
+        text-align: center;
     }
 }
