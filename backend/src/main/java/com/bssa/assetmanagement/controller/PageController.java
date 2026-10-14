@@ -24,6 +24,36 @@ public class PageController {
 
     @GetMapping("/")
     public String homePage(Authentication authentication, Model model) {
+        addUserDetails(authentication, model);
+        return "dashboard";
+    }
+    
+    @GetMapping("/admin")
+    public String systemAdminPage(Authentication authentication, Model model) {
+        addUserDetails(authentication, model);
+        return "dashboard";
+    }
+
+    @GetMapping("/inventory-admin")
+    public String inventoryAdminPage(Authentication authentication, Model model) {
+        addUserDetails(authentication, model);
+        return "dashboard";
+    }
+
+    @GetMapping("/inventory-manager")
+    public String inventoryManagerPage(Authentication authentication, Model model) {
+        addUserDetails(authentication, model);
+        return "dashboard";
+    }
+
+    @GetMapping("/office-staff")
+    public String officeStaffPage(Authentication authentication, Model model) {
+        addUserDetails(authentication, model);
+        return "dashboard";
+    }
+
+
+    private void addUserDetails(Authentication authentication, Model model) {
 
         AppUser appUser = appUserRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new IllegalStateException(
@@ -44,27 +74,5 @@ public class PageController {
                 .orElse("USER");
 
         model.addAttribute("userRole", role);
-
-        return "dashboard";
-    }
-
-    @GetMapping("/admin")
-    public String systemAdminPage() {
-        return "dashboard";
-    }
-
-    @GetMapping("/inventory-admin")
-    public String inventoryAdminPage() {
-        return "dashboard";
-    }
-
-    @GetMapping("/inventory-manager")
-    public String inventoryManagerPage() {
-        return "dashboard";
-    }
-
-    @GetMapping("/office-staff")
-    public String officeStaffPage() {
-        return "dashboard";
     }
 }
