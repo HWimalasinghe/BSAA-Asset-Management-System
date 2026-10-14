@@ -1,0 +1,244 @@
+.department-panel {
+    padding: 26px;
+    border: 1px solid #e2e8f1;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 6px 20px rgba(22, 39, 75, 0.035);
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.section-heading h2 {
+    margin: 0 0 8px;
+    color: #1b355b;
+    font-size: 20px;
+}
+
+.section-heading p {
+    margin: 0;
+    color: #68758a;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.back-link {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    border: 1px solid #d4dce8;
+    border-radius: 8px;
+    color: #173b72;
+    background: #ffffff;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.back-link:hover {
+    background: #f0f4fa;
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.department-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.department-table th,
+.department-table td {
+    padding: 15px 14px;
+    border-bottom: 1px solid #e8edf5;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.department-table th {
+    background: #f5f7fb;
+    color: #465873;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.department-table td {
+    color: #526178;
+}
+
+.department-table tbody tr:hover {
+    background: #fafbfd;
+}
+
+.department-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.department-status {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.status-active {
+    background: #e6f5ec;
+    color: #246b45;
+}
+
+.status-inactive {
+    background: #fcebec;
+    color: #a63d46;
+}
+
+.empty-message {
+    padding: 32px 14px !important;
+    color: #8994a6 !important;
+    text-align: center;
+}
+
+@media (max-width: 650px) {
+    .department-panel {
+        padding: 18px;
+    }
+
+    .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .back-link {
+        align-self: flex-start;
+    }
+
+    .department-table th,
+    .department-table td {
+        padding: 12px 10px;
+    }
+
+    .department-form {
+        max-width: 680px;
+    }
+
+    .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 22px;
+    }
+
+    .form-field label {
+        color: #1b355b;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .form-field input,
+    .form-field textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #d4dce8;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #172033;
+        font: inherit;
+        font-size: 14px;
+    }
+
+    .form-field input:focus,
+    .form-field textarea:focus {
+        outline: none;
+        border-color: #2f65ad;
+        box-shadow: 0 0 0 3px rgba(47, 101, 173, 0.12);
+    }
+
+    .form-field textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .form-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 28px;
+    }
+
+    .primary-button {
+        padding: 11px 17px;
+        border: 1px solid #173b72;
+        border-radius: 8px;
+        background: #173b72;
+        color: #ffffff;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .primary-button:hover {
+        background: #214e8e;
+    }
+
+    @media (max-width: 650px) {
+        .form-actions {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .form-actions .primary-button,
+        .form-actions .back-link {
+            text-align: center;
+        }
+    }
+
+    .feedback-message {
+        margin: 0 0 20px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .success-message {
+        border: 1px solid #b8e2c9;
+        background: #e6f5ec;
+        color: #246b45;
+    }
+
+    .error-message {
+        border: 1px solid #f0c5c8;
+        background: #fcebec;
+        color: #a63d46;
+    }
+
+    .department-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .department-actions .primary-button {
+        text-decoration: none;
+    }
+
+    @media (max-width: 650px) {
+        .department-actions {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .department-actions > a {
+            text-align: center;
+        }
+    }
+}

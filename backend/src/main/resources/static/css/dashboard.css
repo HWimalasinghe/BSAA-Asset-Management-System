@@ -220,4 +220,16 @@ footer {
         align-items: flex-start;
         flex-direction: column;
     }
+
+    .department-link {
+        display: inline-block;
+        color: #2f65ad;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .department-link:hover {
+        text-decoration: underline;
+    }
 }

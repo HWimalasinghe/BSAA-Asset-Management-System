@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Department | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/departments.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">ORGANIZATION MANAGEMENT</p>
+            <h1>Add Department</h1>
+            <p>Register a new department in the BSAA Asset Management System.</p>
+        </section>
+
+        <section class="department-panel">
+            <form th:action="@{/departments}" method="post"
+                  class="department-form">
+
+                  <p class="feedback-message error-message"
+                    th:if="${errorMessage != null}"
+                    th:text="${errorMessage}"></p>
+
+                <div class="form-field">
+                    <label for="name">Department Name</label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        maxlength="100"
+                        required
+                        placeholder="Enter department name">
+                </div>
+
+                <div class="form-field">
+                    <label for="description">Description (Optional)</label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        maxlength="255"
+                        rows="4"
+                        placeholder="Enter a short description"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="primary-button">
+                        Save Department
+                    </button>
+
+                    <a class="back-link" th:href="@{/departments}">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </section>
+
+        <footer>BSAA Asset Management System</footer>
+    </main>
+</body>
+</html>

@@ -74,6 +74,16 @@
                 <p>Manage employee accounts and access permissions.</p>
                 <span class="status">Coming soon</span>
             </article>
+            
+            <article class="summary-card"
+                    th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN'}">
+                <span class="card-number">05</span>
+                <h2>Department Management</h2>
+                <p>View and manage organizational departments.</p>
+                <a class="department-link" th:href="@{/departments}">
+                    Manage Departments →
+                </a>
+            </article>
         </section>
 
         <section class="account-panel">

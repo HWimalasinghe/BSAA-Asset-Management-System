@@ -34,6 +34,9 @@ public class SecurityConfig {
                 .requestMatchers("/inventory-admin", "/inventory-admin/**")
                     .hasAnyRole("SYSTEM_ADMIN", "INVENTORY_ADMIN")
 
+                .requestMatchers("/departments", "/departments/**")
+                    .hasAnyRole("SYSTEM_ADMIN", "INVENTORY_ADMIN")
+                
                 .requestMatchers("/inventory-manager", "/inventory-manager/**")
                     .hasAnyRole(
                         "SYSTEM_ADMIN",

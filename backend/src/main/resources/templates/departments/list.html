@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Departments | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/departments.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">ORGANIZATION MANAGEMENT</p>
+            <h1>Departments</h1>
+            <p>
+                View and manage the departments registered in the
+                BSAA Asset Management System.
+            </p>
+        </section>
+
+        <section class="department-panel">
+
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Department Directory</h2>
+                    <p>Departments are displayed alphabetically.</p>
+                </div>
+
+                <div class="department-actions">
+                    <a class="primary-button"
+                       th:href="@{/departments/new}">
+                        + Add Department
+                    </a>
+
+                    <a class="back-link" th:href="@{/}">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="department-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Department Name</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr th:each="department : ${departments}">
+                            <td th:text="${department.departmentId}">1</td>
+
+                            <td th:text="${department.name}">
+                                Academic Department
+                            </td>
+
+                            <td>
+                                <span
+                                    th:text="${department.description != null
+                                        and !department.description.isBlank()
+                                        ? department.description : '—'}">—</span>
+                            </td>
+
+                            <td>
+                                <span
+                                    class="department-status"
+                                    th:classappend="${department.active}
+                                        ? ' status-active' : ' status-inactive'"
+                                    th:text="${department.active}
+                                        ? 'Active' : 'Inactive'">Active</span>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(departments)}">
+                            <td colspan="4" class="empty-message">
+                                No departments have been registered yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>BSAA Asset Management System</footer>
+    </main>
+</body>
+</html>
