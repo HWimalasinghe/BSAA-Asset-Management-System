@@ -16,6 +16,7 @@
                 <small>Asset Management</small>
             </span>
         </a>
+
         <form th:action="@{/logout}" method="post">
             <button class="logout-button" type="submit">Sign out</button>
         </form>
@@ -61,25 +62,36 @@
                             <th>Area Name</th>
                             <th>Description</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         <tr th:each="area : ${physicalAreas}">
                             <td th:text="${area.areaId}">1</td>
+
                             <td th:text="${area.name}">Library</td>
+
                             <td>
                                 <span th:text="${area.description != null and !area.description.isBlank() ? area.description : '—'}">—</span>
                             </td>
+
                             <td>
                                 <span class="department-status"
                                       th:classappend="${area.active} ? ' status-active' : ' status-inactive'"
                                       th:text="${area.active} ? 'Active' : 'Inactive'">Active</span>
                             </td>
+
+                            <td>
+                                <a class="department-link"
+                                   th:href="@{/physical-areas/edit(id=${area.areaId})}">
+                                    Edit
+                                </a>
+                            </td>
                         </tr>
 
                         <tr th:if="${#lists.isEmpty(physicalAreas)}">
-                            <td colspan="4" class="empty-message">
+                            <td colspan="5" class="empty-message">
                                 No physical areas have been registered yet.
                             </td>
                         </tr>

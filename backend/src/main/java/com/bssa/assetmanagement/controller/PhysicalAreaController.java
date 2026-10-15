@@ -35,6 +35,28 @@ public class PhysicalAreaController {
     public String showCreateForm() {
         return "physical-areas/form";
     }
+    
+    @GetMapping("/edit")
+    public String showEditForm(
+            @RequestParam Long id,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        PhysicalArea physicalArea = physicalAreaRepository.findById(id)
+                .orElse(null);
+
+        if (physicalArea == null) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Physical area not found."
+            );
+            return "redirect:/physical-areas";
+        }
+
+        model.addAttribute("physicalArea", physicalArea);
+
+        return "physical-areas/edit-form";
+    }
 
     @PostMapping
     public String createPhysicalArea(
@@ -73,6 +95,61 @@ public class PhysicalAreaController {
         redirectAttributes.addFlashAttribute(
                 "successMessage",
                 "Physical area created successfully."
+        );
+
+        return "redirect:/physical-areas";
+    }
+    
+    @PostMapping("/update")
+    public String updatePhysicalArea(
+            @RequestParam Long id,
+            @RequestParam String name,
+            @RequestParam(required = false) String description,
+            RedirectAttributes redirectAttributes) {
+
+        PhysicalArea physicalArea = physicalAreaRepository.findById(id)
+                .orElse(null);
+
+        if (physicalArea == null) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Physical area not found."
+            );
+            return "redirect:/physical-areas";
+        }
+
+        String trimmedName = name.trim();
+
+        if (trimmedName.isEmpty()) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Physical area name is required."
+            );
+            return "redirect:/physical-areas/edit?id=" + id;
+        }
+
+        if (physicalAreaRepository
+                .existsByNameIgnoreCaseAndAreaIdNot(trimmedName, id)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "A physical area with this name already exists."
+            );
+            return "redirect:/physical-areas/edit?id=" + id;
+        }
+
+        physicalArea.setName(trimmedName);
+
+        if (description != null && !description.isBlank()) {
+            physicalArea.setDescription(description.trim());
+        } else {
+            physicalArea.setDescription(null);
+        }
+
+        physicalAreaRepository.save(physicalArea);
+
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                "Physical area updated successfully."
         );
 
         return "redirect:/physical-areas";
