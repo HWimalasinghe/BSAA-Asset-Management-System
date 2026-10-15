@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physical Areas | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/departments.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">ORGANIZATION MANAGEMENT</p>
+            <h1>Physical Area Management</h1>
+            <p>View and manage the physical locations used by BSAA.</p>
+        </section>
+
+        <section class="department-panel">
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Physical Area Directory</h2>
+                    <p>Registered physical locations and their current status.</p>
+                </div>
+
+                <div class="department-actions">
+                    <a class="primary-button" th:href="@{/physical-areas/new}">
+                        Add Physical Area
+                    </a>
+                    <a class="back-link" th:href="@{/}">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="department-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Area Name</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr th:each="area : ${physicalAreas}">
+                            <td th:text="${area.areaId}">1</td>
+                            <td th:text="${area.name}">Library</td>
+                            <td>
+                                <span th:text="${area.description != null and !area.description.isBlank() ? area.description : '—'}">—</span>
+                            </td>
+                            <td>
+                                <span class="department-status"
+                                      th:classappend="${area.active} ? ' status-active' : ' status-inactive'"
+                                      th:text="${area.active} ? 'Active' : 'Inactive'">Active</span>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(physicalAreas)}">
+                            <td colspan="4" class="empty-message">
+                                No physical areas have been registered yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>BSAA Asset Management System</footer>
+    </main>
+</body>
+</html>

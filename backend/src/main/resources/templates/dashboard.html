@@ -74,7 +74,7 @@
                 <p>Manage employee accounts and access permissions.</p>
                 <span class="status">Coming soon</span>
             </article>
-            
+
             <article class="summary-card"
                     th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN'}">
                 <span class="card-number">05</span>
@@ -82,6 +82,16 @@
                 <p>View and manage organizational departments.</p>
                 <a class="department-link" th:href="@{/departments}">
                     Manage Departments →
+                </a>
+            </article>
+
+            <article class="summary-card"
+                    th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN'}">
+                <span class="card-number">06</span>
+                <h2>Physical Area Management</h2>
+                <p>View and manage physical locations used for organizational assets.</p>
+                <a class="department-link" th:href="@{/physical-areas}">
+                    Manage Physical Areas →
                 </a>
             </article>
         </section>
