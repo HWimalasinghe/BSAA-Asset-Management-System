@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Property Type | BSAA Asset Management</title>
+
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/departments.css}">
+
+    <style>
+        .type-form {
+            width: 100%;
+            max-width: 680px;
+        }
+
+        .type-form .type-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 22px;
+        }
+
+        .type-form .type-field label {
+            color: #1b355b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .type-form .type-input,
+        .type-form .type-select,
+        .type-form .type-textarea {
+            display: block;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #d4dce8;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #172033;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .type-form .type-input:focus,
+        .type-form .type-select:focus,
+        .type-form .type-textarea:focus {
+            outline: none;
+            border-color: #2f65ad;
+            box-shadow: 0 0 0 3px rgba(47, 101, 173, 0.12);
+        }
+
+        .type-form .type-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        @media (max-width: 650px) {
+            .type-form .form-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .type-form .form-actions .primary-button,
+            .type-form .form-actions .back-link {
+                box-sizing: border-box;
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">PROPERTY MANAGEMENT</p>
+            <h1>Add Property Type</h1>
+            <p>Register a property type under an existing category.</p>
+        </section>
+
+        <section class="department-panel">
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Property Type Details</h2>
+                    <p>Enter the information below.</p>
+                </div>
+
+                <a class="back-link" th:href="@{/property-types}">
+                    Back to Property Types
+                </a>
+            </div>
+
+            <form class="type-form"
+                  th:action="@{/property-types}"
+                  method="post">
+
+                <div class="type-field">
+                    <label for="categoryId">Property Category</label>
+                    <select class="type-select"
+                            id="categoryId"
+                            name="categoryId"
+                            required>
+                        <option value="">Select a category</option>
+                        <option th:each="category : ${categories}"
+                                th:value="${category.categoryId}"
+                                th:text="${category.name}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="type-field">
+                    <label for="name">Property Type Name</label>
+                    <input class="type-input"
+                           type="text"
+                           id="name"
+                           name="name"
+                           maxlength="100"
+                           placeholder="e.g. Laptop, Chair, Monitor"
+                           required>
+                </div>
+
+                <div class="type-field">
+                    <label for="usageType">Usage Type</label>
+                    <select class="type-select"
+                            id="usageType"
+                            name="usageType"
+                            required>
+                        <option value="">Select usage type</option>
+                        <option value="COMMON">Common</option>
+                        <option value="INDIVIDUAL">Individual</option>
+                    </select>
+                </div>
+
+                <div class="type-field">
+                    <label for="description">Description</label>
+                    <textarea class="type-textarea"
+                              id="description"
+                              name="description"
+                              rows="4"
+                              maxlength="255"
+                              placeholder="Enter an optional description"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="primary-button">
+                        Save Property Type
+                    </button>
+
+                    <a class="back-link"
+                       th:href="@{/property-types}">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </section>
+
+        <footer>BSAA Asset Management System</footer>
+    </main>
+</body>
+</html>

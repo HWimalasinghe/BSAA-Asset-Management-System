@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Types | BSAA Asset Management</title>
+
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/departments.css}">
+
+    <style>
+        .type-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .type-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .type-table th,
+        .type-table td {
+            padding: 13px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e5eaf1;
+            vertical-align: middle;
+        }
+
+        .type-table th {
+            color: #1b355b;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .type-table td {
+            color: #344054;
+            font-size: 13px;
+        }
+
+        .type-table .type-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .type-table .type-actions form {
+            margin: 0;
+        }
+
+        .type-table .type-actions button {
+            cursor: pointer;
+        }
+
+        .type-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .type-status.active {
+            color: #17663a;
+            background: #e5f7ec;
+        }
+
+        .type-status.inactive {
+            color: #a12a2a;
+            background: #fdeaea;
+        }
+
+        .type-usage {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 6px;
+            background: #edf3fb;
+            color: #254d80;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .type-description {
+            min-width: 160px;
+            max-width: 280px;
+            overflow-wrap: anywhere;
+        }
+
+        .type-empty {
+            padding: 30px 15px;
+            text-align: center;
+            color: #667085;
+        }
+
+        @media (max-width: 650px) {
+            .type-table .type-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">PROPERTY MANAGEMENT</p>
+            <h1>Property Types</h1>
+            <p>Manage property types and their categories.</p>
+        </section>
+
+        <section class="department-panel">
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>All Property Types</h2>
+                    <p>View, edit, activate, or deactivate property types.</p>
+                </div>
+
+                <a class="primary-button" th:href="@{/property-types/new}">
+                    Add Property Type
+                </a>
+            </div>
+
+            <div class="type-table-wrapper">
+                <table class="type-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Category</th>
+                            <th>Property Type</th>
+                            <th>Usage Type</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr th:each="propertyType : ${propertyTypes}">
+                            <td th:text="${propertyType.propertyTypeId}"></td>
+
+                            <td th:text="${propertyType.category.name}"></td>
+
+                            <td th:text="${propertyType.name}"></td>
+
+                            <td>
+                                <span class="type-usage"
+                                      th:text="${propertyType.usageType == 'COMMON' ? 'Common' : 'Individual'}">
+                                </span>
+                            </td>
+
+                            <td class="type-description"
+                                th:text="${propertyType.description != null and !propertyType.description.isBlank() ? propertyType.description : '-'}">
+                            </td>
+
+                            <td>
+                                <span class="type-status"
+                                      th:classappend="${propertyType.active ? ' active' : ' inactive'}"
+                                      th:text="${propertyType.active ? 'Active' : 'Inactive'}">
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="type-actions">
+                                    <a class="back-link"
+                                       th:href="@{/property-types/edit(id=${propertyType.propertyTypeId})}">
+                                        Edit
+                                    </a>
+
+                                    <form th:action="@{/property-types/toggle-status}"
+                                          method="post">
+                                        <input type="hidden"
+                                               name="id"
+                                               th:value="${propertyType.propertyTypeId}">
+
+                                        <button type="submit"
+                                                class="department-link"
+                                                th:text="${propertyType.active ? 'Deactivate' : 'Activate'}">
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(propertyTypes)}">
+                            <td colspan="7" class="type-empty">
+                                No property types have been registered yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>BSAA Asset Management System</footer>
+    </main>
+</body>
+</html>
