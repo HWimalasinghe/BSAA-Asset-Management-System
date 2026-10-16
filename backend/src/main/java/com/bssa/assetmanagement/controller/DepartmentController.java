@@ -156,4 +156,34 @@ public class DepartmentController {
 
         return "redirect:/departments";
     }
+
+    @PostMapping("/toggle-status")
+    public String toggleDepartmentStatus(
+            @RequestParam Long id,
+            RedirectAttributes redirectAttributes) {
+
+        Department department = departmentRepository.findById(id)
+                .orElse(null);
+
+        if (department == null) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Department not found."
+            );
+            return "redirect:/departments";
+        }
+
+        department.setActive(!department.isActive());
+        departmentRepository.save(department);
+
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                department.isActive()
+                        ? "Department activated successfully."
+                        : "Department deactivated successfully."
+        );
+
+        return "redirect:/departments";
+    }
+
 }

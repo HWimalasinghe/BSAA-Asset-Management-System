@@ -98,10 +98,26 @@
 
                             <td>
                                 <a class="department-link"
-                                   th:href="@{/departments/edit(id=${department.departmentId})}">
+                                th:href="@{/departments/edit(id=${department.departmentId})}">
                                     Edit
                                 </a>
+
+                                <form th:action="@{/departments/toggle-status}"
+                                    method="post"
+                                    style="display: inline;">
+                                    <input type="hidden"
+                                        name="id"
+                                        th:value="${department.departmentId}">
+
+                                    <button type="submit"
+                                            class="department-link"
+                                            th:text="${department.active}
+                                                ? 'Deactivate' : 'Activate'">
+                                        Deactivate
+                                    </button>
+                                </form>
                             </td>
+
                         </tr>
 
                         <tr th:if="${#lists.isEmpty(departments)}">
