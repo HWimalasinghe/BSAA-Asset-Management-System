@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Categories | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/departments.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">PROPERTY MANAGEMENT</p>
+            <h1>Property Categories</h1>
+            <p>
+                View and manage the categories used to classify
+                properties in the BSAA Asset Management System.
+            </p>
+        </section>
+
+        <section class="department-panel">
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Category Directory</h2>
+                    <p>Categories are displayed alphabetically.</p>
+                </div>
+
+                <div class="department-actions">
+                    <a class="primary-button"
+                       th:href="@{/property-categories/new}">
+                        + Add Category
+                    </a>
+
+                    <a class="back-link" th:href="@{/}">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="department-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Category Name</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr th:each="category : ${categories}">
+                            <td th:text="${category.categoryId}">1</td>
+
+                            <td th:text="${category.name}">
+                                General
+                            </td>
+
+                            <td>
+                                <span
+                                    th:text="${category.description != null
+                                        and !category.description.isBlank()
+                                        ? category.description : '—'}">—</span>
+                            </td>
+
+                            <td>
+                                <span
+                                    class="department-status"
+                                    th:classappend="${category.active}
+                                        ? ' status-active' : ' status-inactive'"
+                                    th:text="${category.active}
+                                        ? 'Active' : 'Inactive'">Active</span>
+                            </td>
+
+                            <td>
+                                <a class="department-link"
+                                th:href="@{/property-categories/edit(id=${category.categoryId})}">
+                                    Edit
+                                </a>
+
+                                <form th:action="@{/property-categories/toggle-status}" method="post"
+                                    style="display: inline;">
+                                    <input type="hidden" name="id" th:value="${category.categoryId}">
+
+                                    <button type="submit" class="department-link"
+                                            th:text="${category.active} ? 'Deactivate' : 'Activate'">
+                                        Deactivate
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(categories)}">
+                            <td colspan="5" class="empty-message">
+                                No property categories have been registered yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>BSAA Asset Management System</footer>
+    </main>
+</body>
+</html>

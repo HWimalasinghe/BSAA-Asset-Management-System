@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Property Category | BSAA Asset Management</title>
+
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/departments.css}">
+
+    <style>
+        .category-form {
+            width: 100%;
+            max-width: 680px;
+        }
+
+        .category-form .category-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 22px;
+        }
+
+        .category-form .category-field label {
+            color: #1b355b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .category-form .category-input,
+        .category-form .category-textarea {
+            display: block;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #d4dce8;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #172033;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .category-form .category-input:focus,
+        .category-form .category-textarea:focus {
+            outline: none;
+            border-color: #2f65ad;
+            box-shadow: 0 0 0 3px rgba(47, 101, 173, 0.12);
+        }
+
+        .category-form .category-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        @media (max-width: 650px) {
+            .category-form .form-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .category-form .form-actions .primary-button,
+            .category-form .form-actions .back-link {
+                box-sizing: border-box;
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">PROPERTY MANAGEMENT</p>
+            <h1>Edit Property Category</h1>
+            <p>Update the category name or description.</p>
+        </section>
+
+        <section class="department-panel">
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Category Details</h2>
+                    <p>Make the required changes below.</p>
+                </div>
+
+                <a class="back-link" th:href="@{/property-categories}">
+                    Back to Categories
+                </a>
+            </div>
+
+            <form class="category-form"
+                  th:action="@{/property-categories/update}"
+                  method="post">
+
+                <input type="hidden"
+                       name="id"
+                       th:value="${category.categoryId}">
+
+                <div class="category-field">
+                    <label for="name">Category Name</label>
+                    <input class="category-input"
+                           type="text"
+                           id="name"
+                           name="name"
+                           maxlength="100"
+                           th:value="${category.name}"
+                           placeholder="Enter category name"
+                           required>
+                </div>
+
+                <div class="category-field">
+                    <label for="description">Description</label>
+                    <textarea class="category-textarea"
+                              id="description"
+                              name="description"
+                              rows="4"
+                              maxlength="255"
+                              th:text="${category.description}"
+                              placeholder="Enter an optional description"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="primary-button">
+                        Update Category
+                    </button>
+
+                    <a class="back-link"
+                       th:href="@{/property-categories}">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </section>
+
+        <footer>BSAA Asset Management System</footer>
+    </main>
+</body>
+</html>
