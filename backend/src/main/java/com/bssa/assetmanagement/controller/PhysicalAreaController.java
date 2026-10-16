@@ -154,4 +154,36 @@ public class PhysicalAreaController {
 
         return "redirect:/physical-areas";
     }
+
+    @PostMapping("/toggle-status")
+    public String togglePhysicalAreaStatus(
+            @RequestParam Long id,
+            RedirectAttributes redirectAttributes) {
+
+        PhysicalArea physicalArea = physicalAreaRepository.findById(id)
+                .orElse(null);
+
+        if (physicalArea == null) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Physical area not found."
+            );
+            return "redirect:/physical-areas";
+        }
+
+        physicalArea.setActive(!physicalArea.isActive());
+        physicalAreaRepository.save(physicalArea);
+
+        String message = physicalArea.isActive()
+                ? "Physical area activated successfully."
+                : "Physical area deactivated successfully.";
+
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                message
+        );
+
+        return "redirect:/physical-areas";
+    }
+
 }

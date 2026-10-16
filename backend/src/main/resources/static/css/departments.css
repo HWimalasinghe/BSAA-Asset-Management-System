@@ -108,6 +108,22 @@
     text-decoration: underline;
 }
 
+/* Activate / Deactivate button */
+button.department-link {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2f65ad;
+    cursor: pointer;
+}
+
+button.department-link:hover {
+    text-decoration: underline;
+}
+
 .department-status {
     display: inline-block;
     padding: 5px 9px;

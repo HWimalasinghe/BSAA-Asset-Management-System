@@ -82,12 +82,30 @@
                                       th:text="${area.active} ? 'Active' : 'Inactive'">Active</span>
                             </td>
 
+                            
                             <td>
                                 <a class="department-link"
-                                   th:href="@{/physical-areas/edit(id=${area.areaId})}">
+                                th:href="@{/physical-areas/edit(id=${area.areaId})}">
                                     Edit
                                 </a>
+
+                                <form th:action="@{/physical-areas/toggle-status}"
+                                    method="post"
+                                    style="display: inline;">
+
+                                    <input type="hidden"
+                                        name="id"
+                                        th:value="${area.areaId}">
+
+                                    <button type="submit"
+                                            class="department-link"
+                                            th:text="${area.active} ? 'Deactivate' : 'Activate'"
+                                            th:attr="aria-label=${area.active} ? 'Deactivate physical area' : 'Activate physical area'">
+                                        Deactivate
+                                    </button>
+                                </form>
                             </td>
+
                         </tr>
 
                         <tr th:if="${#lists.isEmpty(physicalAreas)}">
