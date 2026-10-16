@@ -16,4 +16,7 @@ public interface PropertyTypeRepository extends JpaRepository<PropertyType, Long
 
     @EntityGraph(attributePaths = "category")
     List<PropertyType> findAllByOrderByCategory_NameAscNameAsc();
+
+    @EntityGraph(attributePaths = "category")
+    List<PropertyType> findAllByActiveTrueOrderByNameAsc();
 }

@@ -16,4 +16,6 @@ public interface PhysicalAreaRepository
     );
 
     List<PhysicalArea> findAllByOrderByNameAsc();
+
+    List<PhysicalArea> findAllByActiveTrueOrderByNameAsc();
 }

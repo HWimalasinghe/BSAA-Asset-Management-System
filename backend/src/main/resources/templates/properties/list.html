@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Management | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/properties.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">INVENTORY MANAGEMENT</p>
+            <h1>Property Management</h1>
+            <p>
+                View and manage the physical properties registered
+                in the BSAA Asset Management System.
+            </p>
+        </section>
+
+        <section class="property-panel">
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Property Register</h2>
+                    <p>Review registered properties, their locations, and current conditions.</p>
+                </div>
+
+                <div class="property-actions">
+                    <a class="primary-button" th:href="@{/properties/new}">
+                        + Register Property
+                    </a>
+
+                    <a class="back-link" th:href="@{/}">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="property-table">
+                    <thead>
+                        <tr>
+                            <th>Property Code</th>
+                            <th>Property Type</th>
+                            <th>Physical Area</th>
+                            <th>Serial Number</th>
+                            <th>Registration Date</th>
+                            <th>Condition</th>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr th:each="property : ${properties}">
+                            <td class="property-code"
+                                th:text="${property.propertyCode}"></td>
+
+                            <td th:text="${property.propertyType.name}"></td>
+
+                            <td th:text="${property.area.name}"></td>
+
+                            <td th:text="${property.serialNumber != null
+                                and !property.serialNumber.isBlank()
+                                ? property.serialNumber : '—'}"></td>
+
+                            <td th:text="${property.purchaseDate}"></td>
+
+                            <td>
+                                <span class="property-condition"
+                                      th:classappend="' condition-' + ${#strings.toLowerCase(property.condition)}"
+                                      th:text="${property.condition}"></span>
+                            </td>
+
+                            <td>
+                                <span class="property-status"
+                                      th:classappend="' status-' + ${#strings.toLowerCase(property.status)}"
+                                      th:text="${property.status.replace('_', ' ')}"></span>
+                            </td>
+
+                            <td th:text="${property.description != null
+                                and !property.description.isBlank()
+                                ? property.description : '—'}"></td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(properties)}">
+                            <td colspan="8" class="empty-message">
+                                No properties have been registered yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>BSAA Asset Management System</footer>
+    </main>
+</body>
+</html>

@@ -1,0 +1,314 @@
+/* =========================================
+   BSAA Asset Management
+   Property Management Styles
+   ========================================= */
+
+.property-panel {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 28px;
+    margin-top: 28px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    border: 1px solid #e5eaf1;
+}
+
+.property-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.property-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.property-table thead {
+    background: #f1f5f9;
+}
+
+.property-table th {
+    padding: 15px 14px;
+    text-align: left;
+    color: #334155;
+    font-weight: 600;
+    white-space: nowrap;
+    border-bottom: 1px solid #dbe3ed;
+}
+
+.property-table td {
+    padding: 14px;
+    color: #475569;
+    border-bottom: 1px solid #edf1f5;
+    vertical-align: middle;
+}
+
+.property-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.property-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.property-code {
+    color: #1d4ed8 !important;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.property-status,
+.property-condition {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.condition-good,
+.status-available {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.condition-damaged,
+.status-under-inspection,
+.status-under-repair {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.condition-broken,
+.status-lost,
+.status-retired {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-assigned {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.empty-message {
+    text-align: center;
+    padding: 36px 16px !important;
+    color: #64748b !important;
+    font-size: 14px;
+}
+
+@media (max-width: 900px) {
+    .property-panel {
+        padding: 18px;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        width: 100%;
+    }
+
+    .property-table {
+        min-width: 1050px;
+    }
+}
+
+@media (max-width: 600px) {
+    .property-panel {
+        padding: 14px;
+    }
+
+    .property-actions {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
+/* =========================================
+   Property Registration Form
+   ========================================= */
+
+.property-form-panel {
+    max-width: 100%;
+}
+
+.property-form {
+    margin-top: 24px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.form-field label {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #1e293b;
+    font: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.form-field textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-field small {
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-notice {
+    margin-top: 26px;
+    padding: 16px 18px;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 14px;
+}
+
+.form-notice p {
+    margin: 6px 0 0;
+    color: #475569;
+    font-size: 13px;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.form-actions .primary-button,
+.form-actions .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    box-sizing: border-box;
+    padding: 11px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.form-actions .secondary-button {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+}
+
+.form-actions .secondary-button:hover {
+    background: #f1f5f9;
+}
+
+@media (max-width: 700px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .full-width {
+        grid-column: auto;
+    }
+
+    .form-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .form-actions .primary-button,
+    .form-actions .secondary-button {
+        width: 100%;
+    }
+}
+
+/* =========================================
+   Property Management Action Buttons
+   ========================================= */
+
+.property-actions .primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 18px;
+    min-height: 42px;
+    box-sizing: border-box;
+    border: 1px solid #2563eb;
+    border-radius: 8px;
+    background-color: #2563eb;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.property-actions .primary-button:hover {
+    background-color: #1d4ed8;
+}
+
+.property-actions .back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 0;
+    min-height: 42px;
+    box-sizing: border-box;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.property-actions .back-link:hover {
+    color: #1d4ed8;
+}
