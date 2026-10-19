@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Assign Property | BSAA Asset Management</title>
+        <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    </head>
+    <body>
+        <header class="topbar">
+            <a class="brand" th:href="@{/}">
+                <span class="brand-icon">B</span>
+                <span>
+                    <strong>BSAA</strong>
+                    <small>Asset Management</small>
+                </span>
+            </a>
+            <form th:action="@{/logout}" method="post">
+                <button class="logout-button" type="submit">Sign out</button>
+            </form>
+        </header>
+
+        <main class="page-content">
+            <section class="welcome">
+                <p class="eyebrow">PROPERTY INVENTORY</p>
+                <h1>Assign a Property</h1>
+                <p>Record the issue of an available property to an employee.</p>
+            </section>
+
+            <section class="account-panel">
+                <form th:action="@{/assignments}" method="post">
+
+                    <p th:if="${errorMessage}"
+                    th:text="${errorMessage}"
+                    style="color: #b42318;"></p>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="propertyId"><strong>Property</strong></label><br>
+                        <select id="propertyId" name="propertyId" required
+                                style="width: 100%; padding: 10px; margin-top: 6px;">
+                            <option value="">Select an available property</option>
+                            <option th:each="property : ${properties}"
+                                    th:value="${property.propertyId}"
+                                    th:text="${property.propertyCode + ' — ' + property.propertyType.name + ' (' + property.area.name + ')'}">
+                            </option>
+                        </select>
+                        <p th:if="${#lists.isEmpty(properties)}">
+                            No available properties found.
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="employeeId"><strong>Employee</strong></label><br>
+                        <select id="employeeId" name="employeeId" required
+                                style="width: 100%; padding: 10px; margin-top: 6px;">
+                            <option value="">Select an employee</option>
+                            <option th:each="employee : ${employees}"
+                                    th:value="${employee.userId}"
+                                    th:text="${employee.employeeCode + ' — ' + employee.firstName + ' ' + employee.lastName}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="areaId"><strong>Issue Area</strong></label><br>
+                        <select id="areaId" name="areaId" required
+                                style="width: 100%; padding: 10px; margin-top: 6px;">
+                            <option value="">Select a physical area</option>
+                            <option th:each="area : ${areas}"
+                                    th:value="${area.areaId}"
+                                    th:text="${area.name}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="conditionAtIssue">
+                            <strong>Condition at Issue</strong>
+                        </label><br>
+                        <select id="conditionAtIssue" name="conditionAtIssue" required
+                                style="width: 100%; padding: 10px; margin-top: 6px;">
+                            <option value="GOOD">Good</option>
+                            <option value="DAMAGED">Damaged</option>
+                            <option value="BROKEN">Broken</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="notes"><strong>Notes (optional)</strong></label><br>
+                        <textarea id="notes" name="notes" maxlength="500" rows="4"
+                                style="width: 100%; padding: 10px; margin-top: 6px;"></textarea>
+                    </div>
+
+                    <button class="logout-button" type="submit">
+                        Assign Property
+                    </button>
+
+                    <a class="action-button" th:href="@{/assignments}">
+                        Cancel
+                    </a>
+                </form>
+            </section>
+        </main>
+    </body>
+</html>

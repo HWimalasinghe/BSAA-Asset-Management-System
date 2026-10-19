@@ -60,12 +60,24 @@
                 <p>Submit and review requests for assets and equipment.</p>
                 <span class="status">Coming soon</span>
             </article>
+                
+            <article class="summary-card"
+                    th:if="${userRole == 'SYSTEM_ADMIN'
+                        or userRole == 'INVENTORY_ADMIN'
+                        or userRole == 'INVENTORY_MANAGER'}">
 
-            <article class="summary-card">
                 <span class="card-number">03</span>
                 <h2>Assignments &amp; Returns</h2>
                 <p>Track issued properties and returned equipment.</p>
-                <span class="status">Coming soon</span>
+
+                <a class="department-link" th:href="@{/assignments}">
+                    Manage Assignments →
+                </a>
+
+                <a class="department-link" th:href="@{/returns}"
+                style="margin-top: 10px;">
+                    Manage Returns →
+                </a>
             </article>
 
             <article class="summary-card">

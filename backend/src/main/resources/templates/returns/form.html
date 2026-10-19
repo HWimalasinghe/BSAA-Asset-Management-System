@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Return Property | BSAA Asset Management</title>
+        <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    </head>
+    <body>
+
+        <header class="topbar">
+            <a class="brand" th:href="@{/}">
+                <span class="brand-icon">B</span>
+                <span>
+                    <strong>BSAA</strong>
+                    <small>Asset Management</small>
+                </span>
+            </a>
+
+            <form th:action="@{/logout}" method="post">
+                <button class="logout-button" type="submit">Sign out</button>
+            </form>
+        </header>
+
+        <main class="page-content">
+            <section class="welcome">
+                <p class="eyebrow">PROPERTY INVENTORY</p>
+                <h1>Return a Property</h1>
+                <p>Record a property's return from an employee and update its condition.</p>
+            </section>
+
+            <section class="account-panel">
+                <form th:action="@{/returns}" method="post" style="width: 100%;">
+
+                    <p th:if="${errorMessage}"
+                    th:text="${errorMessage}"
+                    style="color: #b42318;"></p>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="assignmentId"><strong>Assigned Property</strong></label><br>
+
+                        <select id="assignmentId" name="assignmentId" required
+                                style="width: 100%; padding: 10px; margin-top: 6px;">
+                            <option value="">Select an assigned property</option>
+
+                            <option th:each="assignment : ${assignments}"
+                                    th:value="${assignment.assignmentId}"
+                                    th:text="${assignment.property.propertyCode
+                                        + ' — '
+                                        + assignment.property.propertyType.name
+                                        + ' | Employee: '
+                                        + assignment.employee.firstName
+                                        + ' '
+                                        + assignment.employee.lastName
+                                        + ' | Assignment #'
+                                        + assignment.assignmentId}">
+                            </option>
+                        </select>
+
+                        <p th:if="${#lists.isEmpty(assignments)}">
+                            No properties are currently eligible for return.
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="condition"><strong>Condition at Return</strong></label><br>
+
+                        <select id="condition" name="condition" required
+                                style="width: 100%; padding: 10px; margin-top: 6px;">
+                            <option value="GOOD">Good</option>
+                            <option value="DAMAGED">Damaged</option>
+                            <option value="BROKEN">Broken</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="notes"><strong>Notes (optional)</strong></label><br>
+
+                        <textarea id="notes" name="notes" maxlength="500" rows="4"
+                                style="width: 100%; padding: 10px; margin-top: 6px;"></textarea>
+                    </div>
+
+                    <button class="logout-button" type="submit">
+                        Record Return
+                    </button>
+
+                    <a class="action-button" th:href="@{/returns}">
+                        Cancel
+                    </a>
+                </form>
+            </section>
+        </main>
+    </body>
+</html>

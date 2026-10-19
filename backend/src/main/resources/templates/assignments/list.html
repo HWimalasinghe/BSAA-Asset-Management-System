@@ -1,0 +1,108 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Property Assignments | BSAA Asset Management</title>
+        <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    </head>
+    <body>
+
+        <header class="topbar">
+            <a class="brand" th:href="@{/}">
+                <span class="brand-icon">B</span>
+                <span>
+                    <strong>BSAA</strong>
+                    <small>Asset Management</small>
+                </span>
+            </a>
+
+            <form th:action="@{/logout}" method="post">
+                <button class="logout-button" type="submit">Sign out</button>
+            </form>
+        </header>
+
+        <main class="page-content">
+            <section class="welcome">
+                <p class="eyebrow">PROPERTY INVENTORY</p>
+                <h1>Property Assignments</h1>
+                <p>View the history of properties issued to employees.</p>
+            </section>
+
+            <section class="account-panel">
+                <p th:if="${successMessage}"
+                th:text="${successMessage}"
+                style="color: #067647;"></p>
+
+                <p th:if="${errorMessage}"
+                th:text="${errorMessage}"
+                style="color: #b42318;"></p>
+
+                <div style="margin-bottom: 24px;">
+                    <a class="action-button" th:href="@{/assignments/new}">
+                        + Assign Property
+                    </a>
+                    <a class="action-button" th:href="@{/}">
+                        Dashboard
+                    </a>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 12px;">ID</th>
+                            <th style="text-align: left; padding: 12px;">Property</th>
+                            <th style="text-align: left; padding: 12px;">Employee</th>
+                            <th style="text-align: left; padding: 12px;">Issue Area</th>
+                            <th style="text-align: left; padding: 12px;">Condition</th>
+                            <th style="text-align: left; padding: 12px;">Issued At</th>
+                            <th style="text-align: left; padding: 12px;">Issued By</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        <tr th:each="assignment : ${assignments}">
+                            <td th:text="${assignment.assignmentId}"
+                                style="padding: 12px;"></td>
+
+                            <td style="padding: 12px;">
+                                <strong th:text="${assignment.property.propertyCode}"></strong>
+                                <br>
+                                <small th:text="${assignment.property.propertyType.name}"></small>
+                            </td>
+
+                            <td style="padding: 12px;"
+                                th:text="${assignment.employee.firstName + ' ' + assignment.employee.lastName}">
+                            </td>
+
+                            <td style="padding: 12px;"
+                                th:text="${assignment.area.name}"></td>
+
+                            <td style="padding: 12px;"
+                                th:text="${assignment.conditionAtIssue}"></td>
+
+                            <td style="padding: 12px;"
+                                th:text="${#temporals.format(assignment.issuedAt, 'yyyy-MM-dd HH:mm')}">
+                            </td>
+
+                            <td style="padding: 12px;"
+                                th:text="${assignment.issuedBy.firstName + ' ' + assignment.issuedBy.lastName}">
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(assignments)}">
+                            <td colspan="7"
+                                style="padding: 24px; text-align: center;">
+                                No property assignments have been recorded yet.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+    </body>
+</html>
