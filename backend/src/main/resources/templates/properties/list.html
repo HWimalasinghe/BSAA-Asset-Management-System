@@ -70,6 +70,7 @@
                             <th>Condition</th>
                             <th>Status</th>
                             <th>Description</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
 
@@ -103,10 +104,17 @@
                             <td th:text="${property.description != null
                                 and !property.description.isBlank()
                                 ? property.description : '—'}"></td>
+
+                            <td>
+                                <a class="secondary-button"
+                                   th:href="@{/properties/{id}/edit(id=${property.propertyId})}">
+                                    Edit
+                                </a>
+                            </td>
                         </tr>
 
                         <tr th:if="${#lists.isEmpty(properties)}">
-                            <td colspan="8" class="empty-message">
+                            <td colspan="9" class="empty-message">
                                 No properties have been registered yet.
                             </td>
                         </tr>

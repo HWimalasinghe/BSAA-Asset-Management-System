@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register Property | BSAA Asset Management</title>
+
+    <title th:text="${property != null ? 'Edit Property' : 'Register Property'} + ' | BSAA Asset Management'">
+        Register Property | BSAA Asset Management
+    </title>
+
     <link rel="stylesheet" th:href="@{/css/dashboard.css}">
     <link rel="stylesheet" th:href="@{/css/properties.css}">
 </head>
@@ -25,8 +29,14 @@
     <main class="page-content">
         <section class="welcome">
             <p class="eyebrow">INVENTORY MANAGEMENT</p>
-            <h1>Register New Property</h1>
-            <p>
+
+            <h1 th:text="${property != null ? 'Edit Property' : 'Register New Property'}">
+                Register New Property
+            </h1>
+
+            <p th:text="${property != null
+                ? 'Update the property details while preserving its current status.'
+                : 'Register a physical property and record its type, location, registration date, and condition.'}">
                 Register a physical property and record its type,
                 location, registration date, and condition.
             </p>
@@ -42,94 +52,162 @@
 
             <p class="feedback-message error-message"
                th:if="${errorMessage != null}"
-               th:text="${errorMessage}"></p>
+               th:text="${errorMessage}">
+            </p>
 
-            <form class="property-form" th:action="@{/properties}" method="post">
+            <form class="property-form"
+                  th:action="${property != null
+                    ? '/properties/' + property.propertyId + '/edit'
+                    : '/properties'}"
+                  method="post">
 
                 <div class="form-grid">
+
+                    <!-- Property Code -->
                     <div class="form-field">
                         <label for="propertyCode">Property Code *</label>
+
                         <input type="text"
                                id="propertyCode"
                                name="propertyCode"
                                maxlength="50"
                                placeholder="e.g. BSAA-IT-001"
+                               th:value="${property != null ? property.propertyCode : ''}"
                                required>
                     </div>
 
+                    <!-- Property Type -->
                     <div class="form-field">
                         <label for="propertyTypeId">Property Type *</label>
-                        <select id="propertyTypeId" name="propertyTypeId" required>
+
+                        <select id="propertyTypeId"
+                                name="propertyTypeId"
+                                required>
+
                             <option value="">-- Select Property Type --</option>
+
                             <option th:each="type : ${propertyTypes}"
                                     th:value="${type.propertyTypeId}"
-                                    th:text="${type.name + ' (' + type.category.name + ')'}">
+                                    th:text="${type.name + ' (' + type.category.name + ')'}"
+                                    th:selected="${property != null and property.propertyType.propertyTypeId == type.propertyTypeId}">
                             </option>
                         </select>
                     </div>
 
+                    <!-- Physical Area -->
                     <div class="form-field">
                         <label for="areaId">Physical Area *</label>
-                        <select id="areaId" name="areaId" required>
+
+                        <select id="areaId"
+                                name="areaId"
+                                required>
+
                             <option value="">-- Select Physical Area --</option>
+
                             <option th:each="area : ${areas}"
                                     th:value="${area.areaId}"
-                                    th:text="${area.name}">
+                                    th:text="${area.name}"
+                                    th:selected="${property != null and property.area.areaId == area.areaId}">
                             </option>
                         </select>
                     </div>
 
+                    <!-- Serial Number -->
                     <div class="form-field">
                         <label for="serialNumber">Serial Number</label>
+
                         <input type="text"
                                id="serialNumber"
                                name="serialNumber"
                                maxlength="100"
-                               placeholder="Enter serial number if available">
+                               placeholder="Enter serial number if available"
+                               th:value="${property != null ? property.serialNumber : ''}">
                     </div>
 
+                    <!-- Registration Date -->
                     <div class="form-field">
                         <label for="purchaseDate">Registration Date *</label>
+
                         <input type="date"
                                id="purchaseDate"
                                name="purchaseDate"
+                               th:value="${property != null ? property.purchaseDate : ''}"
                                required>
-                        <small>Date the property was registered in the inventory.</small>
+
+                        <small>
+                            Date the property was registered in the inventory.
+                        </small>
                     </div>
 
+                    <!-- Condition -->
                     <div class="form-field">
                         <label for="condition">Condition *</label>
-                        <select id="condition" name="condition" required>
-                            <option value="GOOD" selected>Good</option>
-                            <option value="DAMAGED">Damaged</option>
-                            <option value="BROKEN">Broken</option>
+
+                        <select id="condition"
+                                name="condition"
+                                required>
+
+                            <option value="GOOD"
+                                    th:selected="${property == null or property.condition == 'GOOD'}">
+                                Good
+                            </option>
+
+                            <option value="DAMAGED"
+                                    th:selected="${property != null and property.condition == 'DAMAGED'}">
+                                Damaged
+                            </option>
+
+                            <option value="BROKEN"
+                                    th:selected="${property != null and property.condition == 'BROKEN'}">
+                                Broken
+                            </option>
                         </select>
                     </div>
 
+                    <!-- Description -->
                     <div class="form-field full-width">
                         <label for="description">Description</label>
+
                         <textarea id="description"
                                   name="description"
                                   maxlength="255"
                                   rows="4"
-                                  placeholder="Enter any additional details about this property"></textarea>
+                                  placeholder="Enter any additional details about this property"
+                                  th:text="${property != null ? property.description : ''}"></textarea>
                     </div>
+
                 </div>
 
-                <div class="form-notice">
+                <!-- Status Information -->
+                <div class="form-notice" th:if="${property == null}">
                     <strong>Initial status:</strong> Available
-                    <p>The property will be registered with the AVAILABLE status.</p>
+                    <p>
+                        The property will be registered with the AVAILABLE status.
+                    </p>
                 </div>
 
+                <div class="form-notice" th:if="${property != null}">
+                    <strong>Current status:</strong>
+                    <span th:text="${property.status}">AVAILABLE</span>
+
+                    <p>
+                        Editing property details will not change its current status.
+                    </p>
+                </div>
+
+                <!-- Form Actions -->
                 <div class="form-actions">
                     <button class="primary-button" type="submit">
-                        Register Property
+                        <span th:text="${property != null ? 'Save Changes' : 'Register Property'}">
+                            Register Property
+                        </span>
                     </button>
 
                     <a class="secondary-button" th:href="@{/properties}">
                         Cancel
                     </a>
                 </div>
+
             </form>
         </section>
 
