@@ -11,6 +11,8 @@ import com.bssa.assetmanagement.repository.PropertyAssignmentRepository;
 import com.bssa.assetmanagement.repository.PropertyRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import com.bssa.assetmanagement.entity.PropertyStatusHistory;
+import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
 
 @Service
 public class PropertyAssignmentService {
@@ -19,16 +21,19 @@ public class PropertyAssignmentService {
     private final AppUserRepository appUserRepository;
     private final PhysicalAreaRepository physicalAreaRepository;
     private final PropertyAssignmentRepository assignmentRepository;
+    private final PropertyStatusHistoryRepository statusHistoryRepository;
 
     public PropertyAssignmentService(
             PropertyRepository propertyRepository,
             AppUserRepository appUserRepository,
             PhysicalAreaRepository physicalAreaRepository,
-            PropertyAssignmentRepository assignmentRepository) {
+            PropertyAssignmentRepository assignmentRepository,
+            PropertyStatusHistoryRepository statusHistoryRepository) {
         this.propertyRepository = propertyRepository;
         this.appUserRepository = appUserRepository;
         this.physicalAreaRepository = physicalAreaRepository;
         this.assignmentRepository = assignmentRepository;
+        this.statusHistoryRepository = statusHistoryRepository;
     }
 
     @Transactional
@@ -93,7 +98,19 @@ public class PropertyAssignmentService {
         assignment.setNotes(
                 notes == null || notes.isBlank() ? null : notes.trim());
 
+        String oldStatus = property.getStatus();
+
         property.setStatus("ASSIGNED");
+
+        PropertyStatusHistory history = new PropertyStatusHistory();
+        history.setProperty(property);
+        history.setOldStatus(oldStatus);
+        history.setNewStatus("ASSIGNED");
+        history.setChangedBy(issuer);
+        history.setReason("Property assigned to " + employee.getFirstName()
+                + " " + employee.getLastName());
+
+        statusHistoryRepository.save(history);
 
         assignmentRepository.save(assignment);
 

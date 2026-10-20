@@ -11,6 +11,8 @@ import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyReturnRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import com.bssa.assetmanagement.entity.PropertyStatusHistory;
+import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
 
 @Service
 public class PropertyReturnService {
@@ -19,16 +21,19 @@ public class PropertyReturnService {
     private final PropertyReturnRepository returnRepository;
     private final PropertyRepository propertyRepository;
     private final AppUserRepository appUserRepository;
+    private final PropertyStatusHistoryRepository statusHistoryRepository;
 
     public PropertyReturnService(
             PropertyAssignmentRepository assignmentRepository,
             PropertyReturnRepository returnRepository,
             PropertyRepository propertyRepository,
-            AppUserRepository appUserRepository) {
+            AppUserRepository appUserRepository,
+            PropertyStatusHistoryRepository statusHistoryRepository) {
         this.assignmentRepository = assignmentRepository;
         this.returnRepository = returnRepository;
         this.propertyRepository = propertyRepository;
         this.appUserRepository = appUserRepository;
+        this.statusHistoryRepository = statusHistoryRepository;
     }
 
     @Transactional
@@ -48,6 +53,7 @@ public class PropertyReturnService {
         }
 
         Property property = assignment.getProperty();
+        String oldStatus = property.getStatus();
 
         if (!"ASSIGNED".equals(property.getStatus())) {
             throw new IllegalArgumentException(
@@ -95,6 +101,16 @@ public class PropertyReturnService {
             case "BROKEN" ->
                     property.setStatus("UNDER_REPAIR");
         }
+        PropertyStatusHistory history = new PropertyStatusHistory();
+        history.setProperty(property);
+        history.setOldStatus(oldStatus);
+        history.setNewStatus(property.getStatus());
+        history.setChangedBy(receiver);
+        history.setReason("Property returned by "
+                + assignment.getEmployee().getFirstName()
+                + " " + assignment.getEmployee().getLastName());
+
+        statusHistoryRepository.save(history);
 
         propertyRepository.save(property);
 
