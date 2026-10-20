@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">ACCOUNT ADMINISTRATION</p>
+            <h1>User Management</h1>
+            <p>View and manage employee accounts and their access status.</p>
+
+            <a class="department-link" th:href="@{/}">
+                ← Back to Dashboard
+            </a>
+
+            <div th:if="${successMessage}"
+                 th:text="${successMessage}"
+                 style="margin-top: 16px; color: green;">
+            </div>
+
+            <div th:if="${errorMessage}"
+                 th:text="${errorMessage}"
+                 style="margin-top: 16px; color: red;">
+            </div>
+        </section>
+
+        <section class="account-panel">
+            <div>
+                <h2>Employee Accounts</h2>
+
+                <p th:text="${#lists.size(users)} + ' account(s) found'">
+                    0 account(s) found
+                </p>
+
+                <a class="department-link" th:href="@{/users/new}">
+                    + Create User
+                </a>
+            </div>
+        </section>
+
+        <div th:if="${#lists.isEmpty(users)}"
+             style="margin-top: 20px;">
+            <p>No user accounts found.</p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(users)}"
+             style="overflow-x: auto; margin-top: 20px;">
+
+            <table style="width: 100%; border-collapse: collapse; background: white;">
+                <thead>
+                    <tr>
+                        <th style="padding: 12px; text-align: left;">Employee Code</th>
+                        <th style="padding: 12px; text-align: left;">Full Name</th>
+                        <th style="padding: 12px; text-align: left;">Email</th>
+                        <th style="padding: 12px; text-align: left;">Department ID</th>
+                        <th style="padding: 12px; text-align: left;">Position</th>
+                        <th style="padding: 12px; text-align: left;">Status</th>
+                        <th style="padding: 12px; text-align: left;">Roles</th>
+                        <th style="padding: 12px; text-align: left;">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr th:each="user : ${users}">
+                        <td style="padding: 12px; border-top: 1px solid #ddd;"
+                            th:text="${user.employeeCode}">
+                            EMP001
+                        </td>
+
+                        <td style="padding: 12px; border-top: 1px solid #ddd;"
+                            th:text="${user.firstName + ' ' + user.lastName}">
+                            Employee Name
+                        </td>
+
+                        <td style="padding: 12px; border-top: 1px solid #ddd;"
+                            th:text="${user.email}">
+                            employee@example.com
+                        </td>
+
+                        <td style="padding: 12px; border-top: 1px solid #ddd;"
+                            th:text="${user.departmentId}">
+                            1
+                        </td>
+
+                        <td style="padding: 12px; border-top: 1px solid #ddd;"
+                            th:text="${user.position != null ? user.position : '-'}">
+                            Position
+                        </td>
+
+                        <td style="padding: 12px; border-top: 1px solid #ddd;">
+                            <span th:text="${user.active ? 'Active' : 'Inactive'}">
+                                Active
+                            </span>
+                        </td>
+
+                        <td style="padding: 12px; border-top: 1px solid #ddd;">
+                            <span th:each="role, stat : ${user.roles}">
+                                <span th:text="${role.name}">SYSTEM_ADMIN</span><span
+                                    th:if="${!stat.last}">, </span>
+                            </span>
+                        </td>
+
+                        <td style="padding: 12px; border-top: 1px solid #ddd;">
+
+                            <!-- Edit User -->
+                            <a class="department-link"
+                               th:href="@{/users/edit/{userId}(userId=${user.userId})}">
+                                Edit
+                            </a>
+
+                            <!-- Activate / Deactivate User -->
+                            <form th:action="@{/users/status}"
+                                  method="post"
+                                  style="margin-top: 8px;">
+
+                                <input type="hidden"
+                                       name="userId"
+                                       th:value="${user.userId}">
+
+                                <input type="hidden"
+                                       name="active"
+                                       th:value="${!user.active}">
+
+                                <button type="submit"
+                                        th:text="${user.active ? 'Deactivate' : 'Activate'}"
+                                        th:disabled="${user.email == #authentication.name
+                                            or (user.active
+                                            and #lists.contains(
+                                                user.roles.![name],
+                                                'SYSTEM_ADMIN')
+                                            and #lists.size(users.?[
+                                                active and roles.?[name == 'SYSTEM_ADMIN'].size() > 0
+                                            ]) <= 1)}"
+                                        th:onclick="|return confirm('Are you sure you want to ${user.active ? 'deactivate' : 'activate'} this account?');">
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            BSAA Asset Management System
+        </footer>
+    </main>
+</body>
+</html>

@@ -1,4 +1,3 @@
-
 package com.bssa.assetmanagement.repository;
 
 import com.bssa.assetmanagement.entity.AppUser;
@@ -12,4 +11,8 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     Optional<AppUser> findByEmail(String email);
 
     List<AppUser> findByActiveTrueOrderByEmployeeCodeAsc();
+
+    boolean existsByEmployeeCodeIgnoreCase(String employeeCode);
+
+    boolean existsByEmailIgnoreCase(String email);
 }

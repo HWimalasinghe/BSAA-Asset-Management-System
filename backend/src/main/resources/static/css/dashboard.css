@@ -13,6 +13,10 @@ body {
     margin: 0;
 }
 
+/* =========================
+   Top Navigation
+   ========================= */
+
 .topbar {
     min-height: 76px;
     padding: 14px 6%;
@@ -60,6 +64,8 @@ body {
     font-size: 12px;
 }
 
+/* Sign Out Button */
+
 .logout-button {
     padding: 10px 17px;
     border: 1px solid #d4dce8;
@@ -75,6 +81,8 @@ body {
 .logout-button:hover {
     background: #f0f4fa;
 }
+
+/* Secondary Action Button */
 
 .action-button {
     display: inline-block;
@@ -94,6 +102,44 @@ body {
     background: #f0f4fa;
 }
 
+/* Primary Action Button */
+
+.primary-button {
+    display: inline-block;
+    padding: 11px 20px;
+    border: 1px solid #173b72;
+    border-radius: 8px;
+    background: #173b72;
+    color: #ffffff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.primary-button:hover {
+    background: #24518f;
+}
+
+/* Navigation Links */
+
+.department-link {
+    display: inline-block;
+    color: #2f65ad;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.department-link:hover {
+    text-decoration: underline;
+}
+
+/* =========================
+   Main Page Content
+   ========================= */
 
 .page-content {
     width: min(1120px, 88%);
@@ -127,6 +173,10 @@ body {
     font-size: 15px;
     line-height: 1.7;
 }
+
+/* =========================
+   Dashboard Cards
+   ========================= */
 
 .summary-grid {
     display: grid;
@@ -177,6 +227,10 @@ body {
     font-weight: 600;
 }
 
+/* =========================
+   Account Panel
+   ========================= */
+
 .account-panel {
     margin-top: 24px;
     padding: 22px 26px;
@@ -208,12 +262,20 @@ body {
     font-weight: 700;
 }
 
+/* =========================
+   Footer
+   ========================= */
+
 footer {
     padding-top: 32px;
     color: #8994a6;
     font-size: 12px;
     text-align: center;
 }
+
+/* =========================
+   Responsive Layout
+   ========================= */
 
 @media (max-width: 650px) {
     .topbar {
@@ -238,17 +300,5 @@ footer {
     .account-panel {
         align-items: flex-start;
         flex-direction: column;
-    }
-
-    .department-link {
-        display: inline-block;
-        color: #2f65ad;
-        font-size: 13px;
-        font-weight: 700;
-        text-decoration: none;
-    }
-
-    .department-link:hover {
-        text-decoration: underline;
     }
 }

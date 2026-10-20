@@ -80,11 +80,16 @@
                 </a>
             </article>
 
-            <article class="summary-card">
+            <article class="summary-card"
+                    th:if="${userRole == 'SYSTEM_ADMIN'}">
+
                 <span class="card-number">04</span>
                 <h2>User Management</h2>
                 <p>Manage employee accounts and access permissions.</p>
-                <span class="status">Coming soon</span>
+
+                <a class="department-link" th:href="@{/users}">
+                    Manage Users →
+                </a>
             </article>
 
             <article class="summary-card"

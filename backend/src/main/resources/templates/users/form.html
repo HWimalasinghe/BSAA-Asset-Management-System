@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${editUser != null ? 'Edit User' : 'Create User'} + ' | BSAA Asset Management'">
+        User Management | BSAA Asset Management
+    </title>
+
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+
+    <style>
+        .user-form {
+            max-width: 700px;
+            margin: 24px auto 0;
+            padding: 28px;
+            border: 1px solid #e2e8f1;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 6px 20px rgba(22, 39, 75, 0.035);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group > label {
+            display: block;
+            margin-bottom: 7px;
+            color: #1b355b;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .form-control {
+            display: block;
+            width: 100%;
+            min-height: 42px;
+            padding: 10px 12px;
+            border: 1px solid #d4dce8;
+            border-radius: 7px;
+            background: #ffffff;
+            color: #172033;
+            font: inherit;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #2f65ad;
+            box-shadow: 0 0 0 3px rgba(47, 101, 173, 0.12);
+        }
+
+        .form-help {
+            display: block;
+            margin-top: 6px;
+            color: #68758a;
+            font-size: 12px;
+        }
+
+        .role-fieldset {
+            margin: 0 0 24px;
+            padding: 18px;
+            border: 1px solid #dce6f4;
+            border-radius: 8px;
+        }
+
+        .role-fieldset legend {
+            padding: 0 7px;
+            color: #1b355b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .role-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            margin: 13px 0;
+            color: #172033;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .role-option input {
+            margin-top: 3px;
+            accent-color: #173b72;
+        }
+
+        .role-description {
+            display: block;
+            margin-top: 3px;
+            color: #68758a;
+            font-size: 12px;
+        }
+
+        .form-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding-top: 4px;
+        }
+
+        .message {
+            margin: 16px 0;
+            padding: 12px 15px;
+            border-radius: 7px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .success-message {
+            border: 1px solid #b7e4c7;
+            background: #edf9f0;
+            color: #205b43;
+        }
+
+        .error-message {
+            border: 1px solid #f0c4c4;
+            background: #fff0f0;
+            color: #a12626;
+        }
+
+        @media (max-width: 650px) {
+            .user-form {
+                padding: 20px;
+            }
+
+            .form-actions {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">ACCOUNT ADMINISTRATION</p>
+
+            <h1 th:text="${editUser != null ? 'Edit User' : 'Create User'}">
+                Create User
+            </h1>
+
+            <p th:text="${editUser != null
+                    ? 'Update employee details and access roles.'
+                    : 'Create an employee account and assign its department and access roles.'}">
+                Manage employee account details.
+            </p>
+
+            <a class="department-link" th:href="@{/users}">
+                ← Back to User Management
+            </a>
+
+            <div th:if="${successMessage}"
+                 class="message success-message"
+                 th:text="${successMessage}">
+            </div>
+
+            <div th:if="${errorMessage}"
+                 class="message error-message"
+                 th:text="${errorMessage}">
+            </div>
+        </section>
+
+        <section class="account-panel">
+            <div>
+                <h2>Employee Details</h2>
+                <p>Complete all required fields.</p>
+            </div>
+        </section>
+
+        <form class="user-form"
+              th:action="${editUser != null}
+                    ? @{/users/{userId}/edit(userId=${editUser.userId})}
+                    : @{/users}"
+              method="post">
+
+            <div class="form-group">
+                <label for="employeeCode">Employee Code *</label>
+                <input class="form-control"
+                       id="employeeCode"
+                       name="employeeCode"
+                       type="text"
+                       maxlength="50"
+                       autocomplete="off"
+                       th:value="${editUser != null ? editUser.employeeCode : ''}"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="firstName">First Name *</label>
+                <input class="form-control"
+                       id="firstName"
+                       name="firstName"
+                       type="text"
+                       maxlength="100"
+                       autocomplete="given-name"
+                       th:value="${editUser != null ? editUser.firstName : ''}"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Last Name *</label>
+                <input class="form-control"
+                       id="lastName"
+                       name="lastName"
+                       type="text"
+                       maxlength="100"
+                       autocomplete="family-name"
+                       th:value="${editUser != null ? editUser.lastName : ''}"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input class="form-control"
+                       id="email"
+                       name="email"
+                       type="email"
+                       maxlength="150"
+                       autocomplete="email"
+                       th:value="${editUser != null ? editUser.email : ''}"
+                       required>
+            </div>
+
+            <div class="form-group" th:if="${editUser == null}">
+                <label for="password">Initial Password *</label>
+                <input class="form-control"
+                       id="password"
+                       name="password"
+                       type="password"
+                       minlength="8"
+                       maxlength="100"
+                       autocomplete="new-password"
+                       required>
+                <small class="form-help">
+                    Use at least 8 characters.
+                </small>
+            </div>
+
+            <div class="form-group" th:if="${editUser != null}">
+                <small class="form-help">
+                    The existing password will remain unchanged.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input class="form-control"
+                       id="phone"
+                       name="phone"
+                       type="tel"
+                       maxlength="30"
+                       autocomplete="tel"
+                       th:value="${editUser != null ? editUser.phone : ''}">
+            </div>
+
+            <div class="form-group">
+                <label for="departmentId">Department *</label>
+                <select class="form-control"
+                        id="departmentId"
+                        name="departmentId"
+                        required>
+
+                    <option value="">Select a department</option>
+
+                    <option th:each="department : ${departments}"
+                            th:value="${department.departmentId}"
+                            th:text="${department.name}"
+                            th:selected="${editUser != null
+                                and editUser.departmentId == department.departmentId}">
+                        Department
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="position">Position</label>
+                <input class="form-control"
+                       id="position"
+                       name="position"
+                       type="text"
+                       maxlength="100"
+                       th:value="${editUser != null ? editUser.position : ''}">
+            </div>
+
+            <fieldset class="role-fieldset">
+                <legend>Assign Roles *</legend>
+
+                <div th:each="role : ${roles}">
+                    <label class="role-option">
+                        <input type="checkbox"
+                               name="roleIds"
+                               th:value="${role.roleId}"
+                               th:checked="${editUser != null
+                                   and editUser.roles.![roleId].contains(role.roleId)}">
+
+                        <span>
+                            <strong th:text="${role.name}">OFFICE_STAFF</strong>
+
+                            <small class="role-description"
+                                   th:if="${role.description != null}"
+                                   th:text="${role.description}">
+                            </small>
+                        </span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <div class="form-actions">
+                <button class="primary-button"
+                        type="submit"
+                        th:text="${editUser != null ? 'Save Changes' : 'Create User'}">
+                    Create User
+                </button>
+
+                <a class="department-link" th:href="@{/users}">
+                    Cancel
+                </a>
+            </div>
+        </form>
+
+        <footer>
+            BSAA Asset Management System
+        </footer>
+    </main>
+</body>
+</html>
