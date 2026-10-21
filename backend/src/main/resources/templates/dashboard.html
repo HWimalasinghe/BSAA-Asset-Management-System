@@ -47,11 +47,17 @@
 
 
         <section class="summary-grid">
-            <article class="summary-card">
+            <article class="summary-card"
+                    th:if="${userRole == 'SYSTEM_ADMIN'
+                        or userRole == 'INVENTORY_ADMIN'}">
+
                 <span class="card-number">01</span>
                 <h2>Property Inventory</h2>
-                <p>View and manage registered organizational properties.</p>
-                <span class="status">Coming soon</span>
+                <p>Register, view, and update organizational properties.</p>
+
+                <a class="department-link" th:href="@{/properties}">
+                    Manage Properties &rarr;
+                </a>
             </article>
 
             <article class="summary-card">
@@ -109,6 +115,32 @@
                 <p>View and manage physical locations used for organizational assets.</p>
                 <a class="department-link" th:href="@{/physical-areas}">
                     Manage Physical Areas →
+                </a>
+            </article>
+
+                        <article class="summary-card"
+                    th:if="${userRole == 'SYSTEM_ADMIN'
+                        or userRole == 'INVENTORY_ADMIN'}">
+
+                <span class="card-number">07</span>
+                <h2>Property Categories</h2>
+                <p>Manage inventory categories such as General, IT, and Electronic.</p>
+
+                <a class="department-link" th:href="@{/property-categories}">
+                    Manage Categories &rarr;
+                </a>
+            </article>
+
+            <article class="summary-card"
+                    th:if="${userRole == 'SYSTEM_ADMIN'
+                        or userRole == 'INVENTORY_ADMIN'}">
+
+                <span class="card-number">08</span>
+                <h2>Property Types</h2>
+                <p>Manage the property types available within each category.</p>
+
+                <a class="department-link" th:href="@{/property-types}">
+                    Manage Property Types &rarr;
                 </a>
             </article>
         </section>
