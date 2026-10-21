@@ -78,6 +78,7 @@ public class SecurityConfig {
                 .requestMatchers("/office-staff", "/office-staff/**")
                     .hasAnyRole(
                         "SYSTEM_ADMIN",
+                        "INVENTORY_MANAGER",
                         "OFFICE_STAFF"
                     )
 

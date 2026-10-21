@@ -87,7 +87,7 @@
             </article>
 
             <article class="summary-card"
-                    th:if="${userRole == 'SYSTEM_ADMIN'}">
+                    th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN'}">
 
                 <span class="card-number">04</span>
                 <h2>User Management</h2>

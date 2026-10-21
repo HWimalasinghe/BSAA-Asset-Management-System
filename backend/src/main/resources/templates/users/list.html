@@ -120,38 +120,45 @@
 
                         <td style="padding: 12px; border-top: 1px solid #ddd;">
 
-                            <!-- Edit User -->
-                            <a class="department-link"
-                               th:href="@{/users/edit/{userId}(userId=${user.userId})}">
-                                Edit
-                            </a>
+                            <div th:if="${manageableUserIds.contains(user.userId)}">
+                                <!-- Edit User -->
+                                <a class="department-link"
+                                   th:href="@{/users/edit/{userId}(userId=${user.userId})}">
+                                    Edit
+                                </a>
 
-                            <!-- Activate / Deactivate User -->
-                            <form th:action="@{/users/status}"
-                                  method="post"
-                                  style="margin-top: 8px;">
+                                <!-- Activate / Deactivate User -->
+                                <form th:action="@{/users/status}"
+                                      method="post"
+                                      style="margin-top: 8px;">
 
-                                <input type="hidden"
-                                       name="userId"
-                                       th:value="${user.userId}">
+                                    <input type="hidden"
+                                           name="userId"
+                                           th:value="${user.userId}">
 
-                                <input type="hidden"
-                                       name="active"
-                                       th:value="${!user.active}">
+                                    <input type="hidden"
+                                           name="active"
+                                           th:value="${!user.active}">
 
-                                <button type="submit"
-                                        th:text="${user.active ? 'Deactivate' : 'Activate'}"
-                                        th:disabled="${user.email == #authentication.name
-                                            or (user.active
-                                            and #lists.contains(
-                                                user.roles.![name],
-                                                'SYSTEM_ADMIN')
-                                            and #lists.size(users.?[
-                                                active and roles.?[name == 'SYSTEM_ADMIN'].size() > 0
-                                            ]) <= 1)}"
-                                        th:onclick="|return confirm('Are you sure you want to ${user.active ? 'deactivate' : 'activate'} this account?');">
-                                </button>
-                            </form>
+                                    <button type="submit"
+                                            th:text="${user.active ? 'Deactivate' : 'Activate'}"
+                                            th:disabled="${user.email == #authentication.name
+                                                or (user.active
+                                                and #lists.contains(
+                                                    user.roles.![name],
+                                                    'SYSTEM_ADMIN')
+                                                and #lists.size(users.?[
+                                                    active and roles.?[name == 'SYSTEM_ADMIN'].size() > 0
+                                                ]) <= 1)}"
+                                            th:onclick="|return confirm('Are you sure you want to ${user.active ? 'deactivate' : 'activate'} this account?');">
+                                    </button>
+                                </form>
+                            </div>
+
+                            <span th:unless="${manageableUserIds.contains(user.userId)}"
+                                  style="color: #68758a; font-size: 13px;">
+                                -
+                            </span>
                         </td>
                     </tr>
                 </tbody>

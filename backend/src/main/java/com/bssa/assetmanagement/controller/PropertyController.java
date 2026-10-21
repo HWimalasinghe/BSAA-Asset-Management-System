@@ -1,21 +1,21 @@
-
 package com.bssa.assetmanagement.controller;
 
-import com.bssa.assetmanagement.entity.PhysicalArea;
+import com.bssa.assetmanagement.entity.AppUser;
 import com.bssa.assetmanagement.entity.Property;
-import com.bssa.assetmanagement.entity.PropertyType;
+import com.bssa.assetmanagement.repository.AppUserRepository;
 import com.bssa.assetmanagement.repository.PhysicalAreaRepository;
 import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyTypeRepository;
+import com.bssa.assetmanagement.service.PropertyService;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.bind.annotation.PathVariable;
-
 
 import java.time.LocalDate;
 
@@ -26,18 +26,32 @@ public class PropertyController {
     private final PropertyRepository propertyRepository;
     private final PropertyTypeRepository propertyTypeRepository;
     private final PhysicalAreaRepository physicalAreaRepository;
+    private final PropertyService propertyService;
+    private final AppUserRepository appUserRepository;
 
     public PropertyController(
             PropertyRepository propertyRepository,
             PropertyTypeRepository propertyTypeRepository,
-            PhysicalAreaRepository physicalAreaRepository) {
+            PhysicalAreaRepository physicalAreaRepository,
+            PropertyService propertyService,
+            AppUserRepository appUserRepository) {
         this.propertyRepository = propertyRepository;
         this.propertyTypeRepository = propertyTypeRepository;
         this.physicalAreaRepository = physicalAreaRepository;
+        this.propertyService = propertyService;
+        this.appUserRepository = appUserRepository;
     }
 
     @GetMapping
-    public String listProperties(Model model) {
+    public String listProperties(
+            Model model,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        if (!isCallerActive(authentication)) {
+            return "redirect:/login?logout";
+        }
+
         model.addAttribute(
                 "properties",
                 propertyRepository.findAllByOrderByPropertyIdDesc()
@@ -47,7 +61,14 @@ public class PropertyController {
     }
 
     @GetMapping("/new")
-    public String showCreateForm(Model model) {
+    public String showCreateForm(
+            Model model,
+            Authentication authentication) {
+
+        if (!isCallerActive(authentication)) {
+            return "redirect:/login?logout";
+        }
+
         model.addAttribute(
                 "propertyTypes",
                 propertyTypeRepository.findAllByActiveTrueOrderByNameAsc()
@@ -64,7 +85,12 @@ public class PropertyController {
     public String showEditForm(
             @PathVariable Long id,
             Model model,
+            Authentication authentication,
             RedirectAttributes redirectAttributes) {
+
+        if (!isCallerActive(authentication)) {
+            return "redirect:/login?logout";
+        }
 
         Property property = propertyRepository.findById(id).orElse(null);
 
@@ -98,84 +124,42 @@ public class PropertyController {
             @RequestParam(required = false) String description,
             @RequestParam LocalDate purchaseDate,
             @RequestParam(defaultValue = "GOOD") String condition,
+            Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
-        String trimmedCode = propertyCode.trim();
-
-        if (trimmedCode.isEmpty()) {
+        if (!isCallerActive(authentication)) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Property code is required."
+                    "Your account has been deactivated."
+            );
+            return "redirect:/login?logout";
+        }
+
+        try {
+            propertyService.createProperty(
+                    propertyCode,
+                    propertyTypeId,
+                    areaId,
+                    serialNumber,
+                    description,
+                    purchaseDate,
+                    condition,
+                    authentication.getName()
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Property registered successfully."
+            );
+            return "redirect:/properties";
+
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    ex.getMessage()
             );
             return "redirect:/properties/new";
         }
-
-        if (propertyRepository.existsByPropertyCodeIgnoreCase(trimmedCode)) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "A property with this code already exists."
-            );
-            return "redirect:/properties/new";
-        }
-
-        if (!condition.equals("GOOD")
-                && !condition.equals("DAMAGED")
-                && !condition.equals("BROKEN")) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Invalid property condition."
-            );
-            return "redirect:/properties/new";
-        }
-
-        PropertyType propertyType = propertyTypeRepository
-                .findById(propertyTypeId)
-                .orElse(null);
-
-        if (propertyType == null || !propertyType.isActive()) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Please select an active property type."
-            );
-            return "redirect:/properties/new";
-        }
-
-        PhysicalArea area = physicalAreaRepository
-                .findById(areaId)
-                .orElse(null);
-
-        if (area == null || !area.isActive()) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Please select an active physical area."
-            );
-            return "redirect:/properties/new";
-        }
-
-        Property property = new Property();
-        property.setPropertyCode(trimmedCode);
-        property.setPropertyType(propertyType);
-        property.setArea(area);
-        property.setSerialNumber(
-                serialNumber == null || serialNumber.isBlank()
-                        ? null : serialNumber.trim()
-        );
-        property.setDescription(
-                description == null || description.isBlank()
-                        ? null : description.trim()
-        );
-        property.setPurchaseDate(purchaseDate);
-        property.setCondition(condition);
-        property.setStatus("AVAILABLE");
-
-        propertyRepository.save(property);
-
-        redirectAttributes.addFlashAttribute(
-                "successMessage",
-                "Property registered successfully."
-        );
-
-        return "redirect:/properties";
     }
 
     @PostMapping("/{id}/edit")
@@ -188,103 +172,115 @@ public class PropertyController {
             @RequestParam(required = false) String description,
             @RequestParam LocalDate purchaseDate,
             @RequestParam(defaultValue = "GOOD") String condition,
+            Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
-        Property property = propertyRepository.findById(id).orElse(null);
-
-        if (property == null) {
+        if (!isCallerActive(authentication)) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Property not found."
+                    "Your account has been deactivated."
+            );
+            return "redirect:/login?logout";
+        }
+
+        try {
+            propertyService.updateProperty(
+                    id,
+                    propertyCode,
+                    propertyTypeId,
+                    areaId,
+                    serialNumber,
+                    description,
+                    purchaseDate,
+                    condition,
+                    authentication.getName()
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Property updated successfully."
             );
             return "redirect:/properties";
-        }
 
-        String trimmedCode = propertyCode.trim();
-
-        if (trimmedCode.isEmpty()) {
+        } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Property code is required."
+                    ex.getMessage()
             );
             return "redirect:/properties/" + id + "/edit";
         }
+    }
 
-        if (propertyRepository
-                .existsByPropertyCodeIgnoreCaseAndPropertyIdNot(trimmedCode, id)) {
+    @PostMapping("/{id}/retire")
+    public String retireProperty(
+            @PathVariable Long id,
+            @RequestParam(required = false) String reason,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        if (!isCallerActive(authentication)) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Another property already uses this code."
+                    "Your account has been deactivated."
             );
-            return "redirect:/properties/" + id + "/edit";
+            return "redirect:/login?logout";
         }
 
-        if (!"GOOD".equals(condition)
-                && !"DAMAGED".equals(condition)
-                && !"BROKEN".equals(condition)) {
+        try {
+            propertyService.retireProperty(id, reason, authentication.getName());
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Asset retired successfully."
+            );
+        } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Invalid property condition."
+                    ex.getMessage()
             );
-            return "redirect:/properties/" + id + "/edit";
         }
-
-        PropertyType propertyType = propertyTypeRepository
-                .findById(propertyTypeId)
-                .orElse(null);
-
-        if (propertyType == null
-                || (!propertyType.isActive()
-                && !propertyType.getPropertyTypeId()
-                        .equals(property.getPropertyType().getPropertyTypeId()))) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Please select an active property type."
-            );
-            return "redirect:/properties/" + id + "/edit";
-        }
-
-        PhysicalArea area = physicalAreaRepository
-                .findById(areaId)
-                .orElse(null);
-
-        if (area == null
-                || (!area.isActive()
-                && !area.getAreaId().equals(property.getArea().getAreaId()))) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Please select an active physical area."
-            );
-            return "redirect:/properties/" + id + "/edit";
-        }
-
-        property.setPropertyCode(trimmedCode);
-        property.setPropertyType(propertyType);
-        property.setArea(area);
-
-        property.setSerialNumber(
-                serialNumber == null || serialNumber.isBlank()
-                        ? null
-                        : serialNumber.trim()
-        );
-
-        property.setDescription(
-                description == null || description.isBlank()
-                        ? null
-                        : description.trim()
-        );
-
-        property.setPurchaseDate(purchaseDate);
-        property.setCondition(condition);
-
-        // Intentionally preserve the existing property status.
-        propertyRepository.save(property);
-
-        redirectAttributes.addFlashAttribute(
-                "successMessage",
-                "Property updated successfully."
-        );
 
         return "redirect:/properties";
+    }
+
+    @PostMapping("/{id}/status")
+    public String updateStatus(
+            @PathVariable Long id,
+            @RequestParam String newStatus,
+            @RequestParam(required = false) String reason,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        if (!isCallerActive(authentication)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Your account has been deactivated."
+            );
+            return "redirect:/login?logout";
+        }
+
+        try {
+            propertyService.changeStatus(id, newStatus, reason, authentication.getName());
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Asset status updated successfully."
+            );
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    ex.getMessage()
+            );
+        }
+
+        return "redirect:/properties";
+    }
+
+    private boolean isCallerActive(Authentication authentication) {
+        if (authentication == null) {
+            return false;
+        }
+
+        return appUserRepository.findByEmail(authentication.getName())
+                .map(AppUser::isActive)
+                .orElse(true);
     }
 }

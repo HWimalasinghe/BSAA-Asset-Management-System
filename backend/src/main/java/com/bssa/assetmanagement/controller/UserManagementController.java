@@ -52,6 +52,10 @@ public class UserManagementController {
             Model model,
             Authentication authentication) {
 
+        if (!isCallerActive(authentication)) {
+            return "redirect:/login?logout";
+        }
+
         List<AppUser> users = appUserRepository.findAll();
 
         model.addAttribute("users", users);
@@ -76,6 +80,10 @@ public class UserManagementController {
             Model model,
             Authentication authentication) {
 
+        if (!isCallerActive(authentication)) {
+            return "redirect:/login?logout";
+        }
+
         loadFormOptions(model, authentication);
         return "users/form";
     }
@@ -87,6 +95,14 @@ public class UserManagementController {
             Model model,
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
+
+        if (!isCallerActive(authentication)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Your account has been deactivated."
+            );
+            return "redirect:/login?logout";
+        }
 
         AppUser user = appUserRepository.findById(userId)
                 .orElse(null);
@@ -129,6 +145,14 @@ public class UserManagementController {
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
+        if (!isCallerActive(authentication)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Your account has been deactivated."
+            );
+            return "redirect:/login?logout";
+        }
+
         String code = employeeCode.trim();
         String first = firstName.trim();
         String last = lastName.trim();
@@ -150,6 +174,14 @@ public class UserManagementController {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
                     "One or more fields exceed the maximum allowed length."
+            );
+            return "redirect:/users/new";
+        }
+
+        if (!isValidEmail(normalizedEmail)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Please provide a valid email address."
             );
             return "redirect:/users/new";
         }
@@ -292,6 +324,14 @@ public class UserManagementController {
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
+        if (!isCallerActive(authentication)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Your account has been deactivated."
+            );
+            return "redirect:/login?logout";
+        }
+
         AppUser user = appUserRepository.findById(userId)
                 .orElse(null);
 
@@ -332,6 +372,14 @@ public class UserManagementController {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
                     "One or more fields exceed the maximum allowed length."
+            );
+            return "redirect:/users/edit/" + userId;
+        }
+
+        if (!isValidEmail(normalizedEmail)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Please provide a valid email address."
             );
             return "redirect:/users/edit/" + userId;
         }
@@ -429,6 +477,14 @@ public class UserManagementController {
             @RequestParam boolean active,
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
+
+        if (!isCallerActive(authentication)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Your account has been deactivated."
+            );
+            return "redirect:/login?logout";
+        }
 
         AppUser user = appUserRepository.findById(userId)
                 .orElse(null);
@@ -595,5 +651,22 @@ public class UserManagementController {
         }
 
         return false;
+    }
+
+    // Check whether the caller is active in the database.
+    private boolean isCallerActive(Authentication authentication) {
+        if (authentication == null) {
+            return false;
+        }
+
+        return appUserRepository.findByEmail(authentication.getName())
+                .map(AppUser::isActive)
+                .orElse(true);
+    }
+
+    // Validate email format.
+    private boolean isValidEmail(String email) {
+        return email != null
+                && email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     }
 }

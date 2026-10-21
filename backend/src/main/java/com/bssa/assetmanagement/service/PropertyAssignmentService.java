@@ -49,9 +49,9 @@ public class PropertyAssignmentService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Property not found."));
 
-        if (!"AVAILABLE".equals(property.getStatus())) {
+        if (!"AVAILABLE".equals(property.getStatus()) || !"GOOD".equals(property.getCondition())) {
             throw new IllegalArgumentException(
-                    "Only available properties can be assigned.");
+                    "Only available properties in good condition can be assigned.");
         }
 
         if (!"GOOD".equals(conditionAtIssue)

@@ -110,6 +110,18 @@
                                    th:href="@{/properties/{id}/edit(id=${property.propertyId})}">
                                     Edit
                                 </a>
+
+                                <form th:if="${property.status != 'RETIRED' and property.status != 'ASSIGNED'}"
+                                      th:action="@{/properties/{id}/retire(id=${property.propertyId})}"
+                                      method="post"
+                                      style="display: inline-block; margin-left: 6px;">
+                                    <button type="submit"
+                                            class="secondary-button"
+                                            style="color: #b42318; border-color: #fda29b; cursor: pointer;"
+                                            onclick="return confirm('Are you sure you want to retire this asset? This cannot be undone.');">
+                                        Retire
+                                    </button>
+                                </form>
                             </td>
                         </tr>
 
