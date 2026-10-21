@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Requests | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/properties.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">REQUEST MANAGEMENT</p>
+            <h1>Asset Requests</h1>
+            <p>Submit and track requests for equipment and organizational assets.</p>
+        </section>
+
+        <section class="property-panel">
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>My Requests</h2>
+                    <p>Track the status of your submitted asset requests.</p>
+                </div>
+
+                <div class="property-actions">
+                    <a class="primary-button" th:href="@{/requests/new}">
+                        + New Request
+                    </a>
+
+                    <a class="back-link" th:href="@{/}">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="property-table">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Requested Item</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Purpose / Notes</th>
+                            <th>Status</th>
+                            <th>Requested At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="req : ${myRequests}">
+                            <td class="property-code" th:text="'REQ-' + ${req.requestId}"></td>
+
+                            <td>
+                                <span th:if="${!#lists.isEmpty(req.items)}"
+                                      th:text="${req.items[0].propertyType.name}"></span>
+                                <span th:if="${#lists.isEmpty(req.items)}" class="secondary-text">N/A</span>
+                            </td>
+
+                            <td>
+                                <span th:if="${!#lists.isEmpty(req.items)}"
+                                      th:text="${req.items[0].propertyType.category.name}"></span>
+                                <span th:if="${#lists.isEmpty(req.items)}" class="secondary-text">N/A</span>
+                            </td>
+
+                            <td>
+                                <strong th:if="${!#lists.isEmpty(req.items)}"
+                                        th:text="${req.items[0].quantity}"></strong>
+                                <span th:if="${#lists.isEmpty(req.items)}">-</span>
+                            </td>
+
+                            <td th:text="${req.notes != null ? req.notes : '-'}"></td>
+
+                            <td>
+                                <span th:class="'property-status status-' + ${#strings.toLowerCase(req.status)}"
+                                      th:text="${req.status}">PENDING</span>
+                            </td>
+
+                            <td th:text="${req.requestedAt != null ? #temporals.format(req.requestedAt, 'yyyy-MM-dd HH:mm') : 'Just now'}"></td>
+
+                            <td>
+                                <a class="detail-link" th:href="@{/requests/{id}(id=${req.requestId})}">
+                                    View Details &rarr;
+                                </a>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(myRequests)}">
+                            <td colspan="8" class="empty-message">
+                                You have not submitted any asset requests yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- All Requests section for Inventory Admins and Managers -->
+        <section class="property-panel" th:if="${hasReviewPrivilege}">
+            <div class="section-heading">
+                <div>
+                    <h2>All Organizational Requests</h2>
+                    <p>Review asset requests submitted across all departments.</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="property-table">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Requester</th>
+                            <th>Requested Item</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Status</th>
+                            <th>Requested At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="req : ${allRequests}">
+                            <td class="property-code" th:text="'REQ-' + ${req.requestId}"></td>
+
+                            <td>
+                                <strong th:text="${req.requester.firstName + ' ' + req.requester.lastName}"></strong>
+                                <br>
+                                <small class="secondary-text" th:text="${req.requester.email}"></small>
+                            </td>
+
+                            <td>
+                                <span th:if="${!#lists.isEmpty(req.items)}"
+                                      th:text="${req.items[0].propertyType.name}"></span>
+                                <span th:if="${#lists.isEmpty(req.items)}" class="secondary-text">N/A</span>
+                            </td>
+
+                            <td>
+                                <span th:if="${!#lists.isEmpty(req.items)}"
+                                      th:text="${req.items[0].propertyType.category.name}"></span>
+                                <span th:if="${#lists.isEmpty(req.items)}" class="secondary-text">N/A</span>
+                            </td>
+
+                            <td>
+                                <strong th:if="${!#lists.isEmpty(req.items)}"
+                                        th:text="${req.items[0].quantity}"></strong>
+                                <span th:if="${#lists.isEmpty(req.items)}">-</span>
+                            </td>
+
+                            <td>
+                                <span th:class="'property-status status-' + ${#strings.toLowerCase(req.status)}"
+                                      th:text="${req.status}">PENDING</span>
+                            </td>
+
+                            <td th:text="${req.requestedAt != null ? #temporals.format(req.requestedAt, 'yyyy-MM-dd HH:mm') : 'Just now'}"></td>
+
+                            <td>
+                                <a class="detail-link" th:href="@{/requests/{id}(id=${req.requestId})}">
+                                    Review &rarr;
+                                </a>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(allRequests)}">
+                            <td colspan="8" class="empty-message">
+                                No organizational requests have been recorded yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

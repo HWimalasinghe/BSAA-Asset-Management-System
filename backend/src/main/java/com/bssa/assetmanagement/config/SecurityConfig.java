@@ -82,6 +82,14 @@ public class SecurityConfig {
                         "OFFICE_STAFF"
                     )
 
+                .requestMatchers("/requests", "/requests/**")
+                    .hasAnyRole(
+                        "SYSTEM_ADMIN",
+                        "INVENTORY_ADMIN",
+                        "INVENTORY_MANAGER",
+                        "OFFICE_STAFF"
+                    )
+
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

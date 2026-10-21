@@ -90,9 +90,30 @@
     color: #991b1b;
 }
 
-.status-assigned {
+.status-assigned,
+.status-fulfilled {
     background: #dbeafe;
     color: #1e40af;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-approved {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-cancelled {
+    background: #f1f5f9;
+    color: #475569;
 }
 
 .empty-message {

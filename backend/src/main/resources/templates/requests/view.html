@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Request REQ-' + ${request.requestId} + ' | BSAA Asset Management'">Request Details | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/properties.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">REQUEST DETAILS</p>
+            <h1 th:text="'Request REQ-' + ${request.requestId}">Request Details</h1>
+            <p>View complete information, line items, and decision status for this asset request.</p>
+        </section>
+
+        <section class="property-panel">
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Overview</h2>
+                    <p>Current request status and requester details.</p>
+                </div>
+
+                <div>
+                    <span th:class="'property-status status-' + ${#strings.toLowerCase(request.status)}"
+                          th:text="${request.status}"
+                          style="font-size: 14px; padding: 6px 14px;">
+                        PENDING
+                    </span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin: 20px 0; padding: 18px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Requester</span>
+                    <strong th:text="${request.requester.firstName + ' ' + request.requester.lastName}">Staff Member</strong>
+                    <div style="font-size: 13px; color: #64748b;" th:text="${request.requester.email}">staff@example.com</div>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Employee Code</span>
+                    <strong th:text="${request.requester.employeeCode != null ? request.requester.employeeCode : '-'}">-</strong>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Requested Date</span>
+                    <strong th:text="${request.requestedAt != null ? #temporals.format(request.requestedAt, 'yyyy-MM-dd HH:mm') : 'Just now'}">2026-10-21</strong>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Current Status</span>
+                    <strong th:text="${request.status}">PENDING</strong>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h3 style="font-size: 16px; margin-bottom: 8px;">Purpose / Business Justification</h3>
+                <p style="background: #ffffff; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; color: #334155; line-height: 1.6;"
+                   th:text="${request.notes != null and !#strings.isEmpty(request.notes) ? request.notes : 'No additional purpose stated.'}"></p>
+            </div>
+
+            <div class="section-heading" style="margin-top: 30px;">
+                <div>
+                    <h2>Requested Line Items</h2>
+                    <p>Asset categories, types, and quantities requested.</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="property-table">
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th>Usage Type</th>
+                            <th>Quantity</th>
+                            <th>Item Notes / Specifications</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item : ${request.items}">
+                            <td>
+                                <strong th:text="${item.propertyType.name}">Item Name</strong>
+                                <div style="font-size: 12px; color: #64748b;"
+                                     th:if="${item.propertyType.description != null}"
+                                     th:text="${item.propertyType.description}"></div>
+                            </td>
+
+                            <td th:text="${item.propertyType.category.name}">Category</td>
+
+                            <td>
+                                <span class="property-condition"
+                                      th:text="${item.propertyType.usageType}">INDIVIDUAL</span>
+                            </td>
+
+                            <td>
+                                <strong style="font-size: 15px;" th:text="${item.quantity}">1</strong>
+                            </td>
+
+                            <td th:text="${item.notes != null ? item.notes : '-'}">-</td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(request.items)}">
+                            <td colspan="5" class="empty-message">
+                                No line items associated with this request.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Decision / Review Notes Section -->
+            <div th:if="${request.status != 'PENDING'}" style="margin-top: 30px; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc;">
+                <h3 style="font-size: 16px; margin-bottom: 12px;">Decision Details</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 12px;">
+                    <div th:if="${request.reviewedBy != null}">
+                        <span class="secondary-text" style="display: block; font-size: 12px;">Reviewed By</span>
+                        <strong th:text="${request.reviewedBy.firstName + ' ' + request.reviewedBy.lastName}">Admin</strong>
+                    </div>
+
+                    <div th:if="${request.reviewedAt != null}">
+                        <span class="secondary-text" style="display: block; font-size: 12px;">Decision Timestamp</span>
+                        <strong th:text="${#temporals.format(request.reviewedAt, 'yyyy-MM-dd HH:mm')}">2026-10-21</strong>
+                    </div>
+                </div>
+
+                <div th:if="${request.status == 'REJECTED'}" style="margin-top: 10px; padding: 12px 16px; background: #fee2e2; border-left: 4px solid #ef4444; border-radius: 6px;">
+                    <strong style="color: #991b1b; display: block; margin-bottom: 4px;">Rejection Reason:</strong>
+                    <span style="color: #7f1d1d;" th:text="${request.rejectionReason}">Reason not provided</span>
+                </div>
+
+                <div th:if="${request.status == 'APPROVED'}" style="margin-top: 10px; padding: 12px 16px; background: #dcfce7; border-left: 4px solid #22c55e; border-radius: 6px;">
+                    <strong style="color: #166534;">This request has been approved and is queued for fulfillment.</strong>
+                </div>
+
+                <div th:if="${request.status == 'CANCELLED'}" style="margin-top: 10px; padding: 12px 16px; background: #f1f5f9; border-left: 4px solid #94a3b8; border-radius: 6px;">
+                    <strong style="color: #475569;">This request was cancelled by the requester.</strong>
+                </div>
+            </div>
+
+            <!-- Actions Panel -->
+            <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+
+                <!-- Requester actions when PENDING -->
+                <a th:if="${isOwner and request.status == 'PENDING'}"
+                   class="primary-button"
+                   th:href="@{/requests/{id}/edit(id=${request.requestId})}">
+                    Edit Request
+                </a>
+
+                <form th:if="${isOwner and request.status == 'PENDING'}"
+                      th:action="@{/requests/{id}/cancel(id=${request.requestId})}"
+                      method="post"
+                      onsubmit="return confirm('Are you sure you want to cancel this request?');"
+                      style="display: inline;">
+                    <button class="delete-button" type="submit">
+                        Cancel Request
+                    </button>
+                </form>
+
+                <!-- Reviewer actions when PENDING -->
+                <form th:if="${hasReviewPrivilege and request.status == 'PENDING'}"
+                      th:action="@{/requests/{id}/review(id=${request.requestId})}"
+                      method="post"
+                      style="display: inline;">
+                    <input type="hidden" name="status" value="APPROVED">
+                    <button class="primary-button" type="submit" style="background: #16a34a;">
+                        &check; Approve Request
+                    </button>
+                </form>
+
+                <form th:if="${hasReviewPrivilege and request.status == 'PENDING'}"
+                      th:action="@{/requests/{id}/review(id=${request.requestId})}"
+                      method="post"
+                      style="display: inline-flex; gap: 8px; align-items: center;">
+                    <input type="hidden" name="status" value="REJECTED">
+                    <input type="text"
+                           name="rejectionReason"
+                           placeholder="Reason for rejection..."
+                           required
+                           style="padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;">
+                    <button class="delete-button" type="submit">
+                        Reject Request
+                    </button>
+                </form>
+
+                <a class="secondary-button" th:href="@{/requests}">
+                    Back to Requests
+                </a>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
