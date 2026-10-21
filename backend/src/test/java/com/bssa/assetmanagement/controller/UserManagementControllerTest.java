@@ -85,6 +85,9 @@ class UserManagementControllerTest {
         when(roleRepository.findAllById(any()))
                 .thenReturn(List.of(adminRole));
 
+        when(roleRepository.findByNameForUpdate("INVENTORY_ADMIN"))
+                .thenReturn(Optional.of(adminRole));
+
         when(appUserRepository.findAll())
                 .thenReturn(List.of(existingAdmin));
 

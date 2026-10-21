@@ -219,18 +219,37 @@ public class UserManagementController {
         }
 
         // Only one Inventory Admin account is permitted, including inactive accounts.
-        if ("INVENTORY_ADMIN".equals(selectedRoles.get(0).getName())
-                && appUserRepository.findAll().stream()
-                        .anyMatch(existingUser ->
-                                existingUser.getRoles().stream()
-                                        .anyMatch(role ->
-                                                "INVENTORY_ADMIN".equals(
-                                                        role.getName())))) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "An Inventory Admin account already exists."
-            );
-            return "redirect:/users/new";
+        // Lock the role row to serialize concurrent creation requests.
+        boolean requestsInventoryAdmin = selectedRoles.stream()
+                .anyMatch(role ->
+                        "INVENTORY_ADMIN".equals(role.getName()));
+
+        if (requestsInventoryAdmin) {
+            boolean inventoryAdminRoleExists =
+                    roleRepository.findByNameForUpdate("INVENTORY_ADMIN")
+                            .isPresent();
+
+            if (!inventoryAdminRoleExists) {
+                redirectAttributes.addFlashAttribute(
+                        "errorMessage",
+                        "The Inventory Admin role is not configured."
+                );
+                return "redirect:/users/new";
+            }
+
+            boolean inventoryAdminExists = appUserRepository.findAll().stream()
+                    .anyMatch(existingUser ->
+                            existingUser.getRoles().stream()
+                                    .anyMatch(role ->
+                                            "INVENTORY_ADMIN".equals(role.getName())));
+
+            if (inventoryAdminExists) {
+                redirectAttributes.addFlashAttribute(
+                        "errorMessage",
+                        "An Inventory Admin account already exists."
+                );
+                return "redirect:/users/new";
+            }
         }
 
         AppUser user = new AppUser();
