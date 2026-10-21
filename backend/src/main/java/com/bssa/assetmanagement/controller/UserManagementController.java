@@ -8,6 +8,7 @@ import com.bssa.assetmanagement.repository.DepartmentRepository;
 import com.bssa.assetmanagement.repository.RoleRepository;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/users")
@@ -44,29 +46,46 @@ public class UserManagementController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // List all user accounts
+    // List user accounts and identify accounts the current administrator can manage.
     @GetMapping
-    public String listUsers(Model model) {
+    public String listUsers(
+            Model model,
+            Authentication authentication) {
+
+        List<AppUser> users = appUserRepository.findAll();
+
+        model.addAttribute("users", users);
         model.addAttribute(
-                "users",
-                appUserRepository.findAll()
+                "isSystemAdmin",
+                hasRole(authentication, "SYSTEM_ADMIN")
+        );
+        model.addAttribute(
+                "manageableUserIds",
+                users.stream()
+                        .filter(user -> canManageTarget(authentication, user))
+                        .map(AppUser::getUserId)
+                        .collect(Collectors.toSet())
         );
 
         return "users/list";
     }
 
-    // Display the create-user form
+    // Display the create-user form.
     @GetMapping("/new")
-    public String showCreateForm(Model model) {
-        loadFormOptions(model);
+    public String showCreateForm(
+            Model model,
+            Authentication authentication) {
+
+        loadFormOptions(model, authentication);
         return "users/form";
     }
 
-    // Display the edit-user form
+    // Display the edit-user form only when the target account is permitted.
     @GetMapping("/edit/{userId}")
     public String showEditForm(
             @PathVariable Long userId,
             Model model,
+            Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
         AppUser user = appUserRepository.findById(userId)
@@ -80,13 +99,21 @@ public class UserManagementController {
             return "redirect:/users";
         }
 
-        loadFormOptions(model);
+        if (!canManageTarget(authentication, user)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "You are not permitted to manage this account."
+            );
+            return "redirect:/users";
+        }
+
+        loadFormOptions(model, authentication);
         model.addAttribute("editUser", user);
 
         return "users/form";
     }
 
-    // Create a new user account
+    // Create a new user account.
     @PostMapping
     @Transactional
     public String createUser(
@@ -99,6 +126,7 @@ public class UserManagementController {
             @RequestParam Long departmentId,
             @RequestParam(required = false) String position,
             @RequestParam(required = false) List<Long> roleIds,
+            Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
         String code = employeeCode.trim();
@@ -166,7 +194,7 @@ public class UserManagementController {
         if (roleIds == null || roleIds.isEmpty()) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Please select at least one role."
+                    "Please select a role."
             );
             return "redirect:/users/new";
         }
@@ -178,6 +206,29 @@ public class UserManagementController {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
                     "One or more selected roles are invalid."
+            );
+            return "redirect:/users/new";
+        }
+
+        if (!canAssignRoles(authentication, selectedRoles)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "You are not permitted to assign the selected role."
+            );
+            return "redirect:/users/new";
+        }
+
+        // Only one Inventory Admin account is permitted, including inactive accounts.
+        if ("INVENTORY_ADMIN".equals(selectedRoles.get(0).getName())
+                && appUserRepository.findAll().stream()
+                        .anyMatch(existingUser ->
+                                existingUser.getRoles().stream()
+                                        .anyMatch(role ->
+                                                "INVENTORY_ADMIN".equals(
+                                                        role.getName())))) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "An Inventory Admin account already exists."
             );
             return "redirect:/users/new";
         }
@@ -206,7 +257,7 @@ public class UserManagementController {
         return "redirect:/users";
     }
 
-    // Update an existing user account
+    // Update an existing account only when the administrator can manage it.
     @PostMapping("/{userId}/edit")
     @Transactional
     public String updateUser(
@@ -219,6 +270,7 @@ public class UserManagementController {
             @RequestParam Long departmentId,
             @RequestParam(required = false) String position,
             @RequestParam(required = false) List<Long> roleIds,
+            Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
         AppUser user = appUserRepository.findById(userId)
@@ -228,6 +280,14 @@ public class UserManagementController {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
                     "User account was not found."
+            );
+            return "redirect:/users";
+        }
+
+        if (!canManageTarget(authentication, user)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "You are not permitted to manage this account."
             );
             return "redirect:/users";
         }
@@ -296,7 +356,7 @@ public class UserManagementController {
         if (roleIds == null || roleIds.isEmpty()) {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Please select at least one role."
+                    "Please select a role."
             );
             return "redirect:/users/edit/" + userId;
         }
@@ -312,6 +372,14 @@ public class UserManagementController {
             return "redirect:/users/edit/" + userId;
         }
 
+        if (!canAssignRoles(authentication, selectedRoles)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "You are not permitted to assign the selected role."
+            );
+            return "redirect:/users/edit/" + userId;
+        }
+
         user.setEmployeeCode(code);
         user.setFirstName(first);
         user.setLastName(last);
@@ -323,7 +391,7 @@ public class UserManagementController {
                 ? null : position.trim());
         user.setRoles(new HashSet<>(selectedRoles));
 
-        // The existing password and active status remain unchanged.
+        // Preserve the existing password and active status.
         appUserRepository.saveAndFlush(user);
 
         redirectAttributes.addFlashAttribute(
@@ -334,7 +402,7 @@ public class UserManagementController {
         return "redirect:/users";
     }
 
-    // Activate or deactivate a user account
+    // Activate or deactivate an account within the administrator's scope.
     @PostMapping("/status")
     @Transactional
     public String updateUserStatus(
@@ -350,6 +418,14 @@ public class UserManagementController {
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
                     "User account was not found."
+            );
+            return "redirect:/users";
+        }
+
+        if (!canManageTarget(authentication, user)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "You are not permitted to change this account's status."
             );
             return "redirect:/users";
         }
@@ -407,8 +483,11 @@ public class UserManagementController {
         return "redirect:/users";
     }
 
-    // Load active departments and available roles for user forms.
-    private void loadFormOptions(Model model) {
+    // Load active departments and only the roles this administrator may assign.
+    private void loadFormOptions(
+            Model model,
+            Authentication authentication) {
+
         model.addAttribute(
                 "departments",
                 departmentRepository.findAllByOrderByNameAsc()
@@ -417,6 +496,85 @@ public class UserManagementController {
                         .toList()
         );
 
-        model.addAttribute("roles", roleRepository.findAll());
+        List<Role> availableRoles = roleRepository.findAll()
+                .stream()
+                .filter(role -> {
+                    if (hasRole(authentication, "SYSTEM_ADMIN")) {
+                        return "INVENTORY_ADMIN".equals(role.getName());
+                    }
+
+                    if (hasRole(authentication, "INVENTORY_ADMIN")) {
+                        return "OFFICE_STAFF".equals(role.getName())
+                                || "INVENTORY_MANAGER".equals(role.getName());
+                    }
+
+                    return false;
+                })
+                .toList();
+
+        model.addAttribute("roles", availableRoles);
+    }
+
+    // Check whether the signed-in administrator has a specific role.
+    private boolean hasRole(
+            Authentication authentication,
+            String roleName) {
+
+        return authentication != null
+                && authentication.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .anyMatch(authority ->
+                                authority.equals("ROLE_" + roleName));
+    }
+
+    // Check whether this administrator may manage the target account.
+    private boolean canManageTarget(
+            Authentication authentication,
+            AppUser target) {
+
+        if (authentication == null || target == null
+                || target.getRoles() == null
+                || target.getRoles().size() != 1) {
+            return false;
+        }
+
+        String targetRole = target.getRoles().iterator()
+                .next()
+                .getName();
+
+        if (hasRole(authentication, "SYSTEM_ADMIN")) {
+            return "INVENTORY_ADMIN".equals(targetRole);
+        }
+
+        if (hasRole(authentication, "INVENTORY_ADMIN")) {
+            return "OFFICE_STAFF".equals(targetRole)
+                    || "INVENTORY_MANAGER".equals(targetRole);
+        }
+
+        return false;
+    }
+
+    // Validate submitted roles independently of the form.
+    private boolean canAssignRoles(
+            Authentication authentication,
+            List<Role> selectedRoles) {
+
+        if (authentication == null || selectedRoles == null
+                || selectedRoles.size() != 1) {
+            return false;
+        }
+
+        String selectedRole = selectedRoles.get(0).getName();
+
+        if (hasRole(authentication, "SYSTEM_ADMIN")) {
+            return "INVENTORY_ADMIN".equals(selectedRole);
+        }
+
+        if (hasRole(authentication, "INVENTORY_ADMIN")) {
+            return "OFFICE_STAFF".equals(selectedRole)
+                    || "INVENTORY_MANAGER".equals(selectedRole);
+        }
+
+        return false;
     }
 }
