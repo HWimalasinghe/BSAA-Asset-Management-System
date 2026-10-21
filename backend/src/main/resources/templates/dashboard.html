@@ -69,13 +69,23 @@
                     Manage Requests &rarr;
                 </a>
             </article>
+
+            <article class="summary-card">
+                <span class="card-number">03</span>
+                <h2>Damage &amp; Loss Incidents</h2>
+                <p>Report damaged or lost assets and track review outcomes.</p>
+
+                <a class="department-link" th:href="@{/incidents}">
+                    Manage Incidents &rarr;
+                </a>
+            </article>
                 
             <article class="summary-card"
                     th:if="${userRole == 'SYSTEM_ADMIN'
                         or userRole == 'INVENTORY_ADMIN'
                         or userRole == 'INVENTORY_MANAGER'}">
 
-                <span class="card-number">03</span>
+                <span class="card-number">04</span>
                 <h2>Assignments &amp; Returns</h2>
                 <p>Track issued properties and returned equipment.</p>
 
@@ -92,7 +102,7 @@
             <article class="summary-card"
                     th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN'}">
 
-                <span class="card-number">04</span>
+                <span class="card-number">05</span>
                 <h2>User Management</h2>
                 <p>Manage employee accounts and access permissions.</p>
 
@@ -103,7 +113,7 @@
 
             <article class="summary-card"
                     th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN'}">
-                <span class="card-number">05</span>
+                <span class="card-number">06</span>
                 <h2>Department Management</h2>
                 <p>View and manage organizational departments.</p>
                 <a class="department-link" th:href="@{/departments}">
@@ -113,7 +123,7 @@
 
             <article class="summary-card"
                     th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN'}">
-                <span class="card-number">06</span>
+                <span class="card-number">07</span>
                 <h2>Physical Area Management</h2>
                 <p>View and manage physical locations used for organizational assets.</p>
                 <a class="department-link" th:href="@{/physical-areas}">
@@ -125,7 +135,7 @@
                     th:if="${userRole == 'SYSTEM_ADMIN'
                         or userRole == 'INVENTORY_ADMIN'}">
 
-                <span class="card-number">07</span>
+                <span class="card-number">08</span>
                 <h2>Property Categories</h2>
                 <p>Manage inventory categories such as General, IT, and Electronic.</p>
 
@@ -138,7 +148,7 @@
                     th:if="${userRole == 'SYSTEM_ADMIN'
                         or userRole == 'INVENTORY_ADMIN'}">
 
-                <span class="card-number">08</span>
+                <span class="card-number">09</span>
                 <h2>Property Types</h2>
                 <p>Manage the property types available within each category.</p>
 

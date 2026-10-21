@@ -96,12 +96,14 @@
     color: #1e40af;
 }
 
-.status-pending {
+.status-pending,
+.status-open {
     background: #fef3c7;
     color: #92400e;
 }
 
-.status-approved {
+.status-approved,
+.status-resolved {
     background: #dcfce7;
     color: #166534;
 }

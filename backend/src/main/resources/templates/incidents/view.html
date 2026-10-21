@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Incident INC-' + ${incident.incidentId} + ' | BSAA Asset Management'">Incident Details | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/properties.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">INCIDENT DETAILS</p>
+            <h1 th:text="'Incident INC-' + ${incident.incidentId}">Incident Details</h1>
+            <p>Comprehensive incident report, affected asset status, and management resolution.</p>
+        </section>
+
+        <section class="property-panel">
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Incident Overview</h2>
+                    <p>Classification and current incident status.</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <span class="property-condition"
+                          th:classappend="${incident.incidentType == 'LOST' ? 'status-lost' : (incident.incidentType == 'BROKEN' ? 'condition-broken' : 'condition-damaged')}"
+                          th:text="${incident.incidentType}">
+                        DAMAGE
+                    </span>
+                    <span th:class="'property-status status-' + ${#strings.toLowerCase(incident.status)}"
+                          th:text="${incident.status}">
+                        OPEN
+                    </span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 18px 0; padding: 18px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Reported By</span>
+                    <strong th:text="${incident.reportedBy.firstName + ' ' + incident.reportedBy.lastName}">Reporter</strong>
+                    <div style="font-size: 13px; color: #64748b;" th:text="${incident.reportedBy.email}">reporter@example.com</div>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Report Date</span>
+                    <strong th:text="${incident.createdAt != null ? #temporals.format(incident.createdAt, 'yyyy-MM-dd HH:mm') : 'Just now'}">2026-10-21</strong>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Incident Type</span>
+                    <strong th:text="${incident.incidentType}">DAMAGE</strong>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Incident Status</span>
+                    <strong th:text="${incident.status}">OPEN</strong>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h3 style="font-size: 15px; margin-bottom: 8px;">Incident Description</h3>
+                <p style="background: #ffffff; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; color: #334155; line-height: 1.6;"
+                   th:text="${incident.description}"></p>
+            </div>
+
+            <div class="section-heading" style="margin-top: 30px;">
+                <div>
+                    <h2>Affected Asset Details</h2>
+                    <p>Current state and location of the reported physical property.</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 16px 0; padding: 18px; background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600;">Property Code</span>
+                    <strong class="property-code" th:text="${incident.property.propertyCode}">BSAA-IT-001</strong>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600;">Property Type</span>
+                    <strong th:text="${incident.property.propertyType.name}">Laptop</strong>
+                    <small style="display: block; color: #64748b;" th:text="${incident.property.propertyType.category.name}"></small>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600;">Serial Number</span>
+                    <strong th:text="${incident.property.serialNumber != null ? incident.property.serialNumber : 'N/A'}">None</strong>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600;">Current Location</span>
+                    <strong th:text="${incident.property.area.name}">Main Office</strong>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600;">Physical Condition</span>
+                    <span th:class="'property-condition condition-' + ${#strings.toLowerCase(incident.property.condition)}"
+                          th:text="${incident.property.condition}">GOOD</span>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600;">Current Status</span>
+                    <span th:class="'property-status status-' + ${#strings.toLowerCase(incident.property.status)}"
+                          th:text="${incident.property.status}">AVAILABLE</span>
+                </div>
+            </div>
+
+            <!-- Decision & Resolution section if reviewed -->
+            <div th:if="${incident.status != 'OPEN'}"
+                 style="margin-top: 30px; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc;">
+                <h3 style="font-size: 16px; margin-bottom: 12px;">Resolution &amp; Review History</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 12px;">
+                    <div th:if="${incident.reviewedBy != null}">
+                        <span class="secondary-text" style="display: block; font-size: 12px;">Reviewed By</span>
+                        <strong th:text="${incident.reviewedBy.firstName + ' ' + incident.reviewedBy.lastName}">Manager</strong>
+                    </div>
+
+                    <div th:if="${incident.reviewedAt != null}">
+                        <span class="secondary-text" style="display: block; font-size: 12px;">Decision Timestamp</span>
+                        <strong th:text="${#temporals.format(incident.reviewedAt, 'yyyy-MM-dd HH:mm')}">2026-10-21</strong>
+                    </div>
+
+                    <div th:if="${incident.actionTaken != null}">
+                        <span class="secondary-text" style="display: block; font-size: 12px;">Action Taken</span>
+                        <strong th:text="${incident.actionTaken}">Sent for repair</strong>
+                    </div>
+                </div>
+
+                <div style="margin-top: 12px; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;">
+                    <strong style="display: block; margin-bottom: 4px;">Decision Notes:</strong>
+                    <span th:text="${incident.decision}">Decision details</span>
+                </div>
+            </div>
+
+            <!-- Management Resolution Panel (only when OPEN and manager) -->
+            <div th:if="${hasReviewPrivilege and incident.status == 'OPEN'}"
+                 style="margin-top: 32px; padding: 24px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;">
+                <h3 style="font-size: 16px; color: #991b1b; margin-bottom: 8px;">Review &amp; Resolve Incident</h3>
+                <p style="color: #7f1d1d; font-size: 14px; margin-bottom: 18px;">
+                    As an authorized inventory administrator, determine the resolution for this reported incident.
+                </p>
+
+                <form th:action="@{/incidents/{id}/resolve(id=${incident.incidentId})}" method="post">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="status">Decision Status *</label>
+                            <select id="status" name="status" class="form-control" required>
+                                <option value="APPROVED" selected>APPROVED (Confirm and accept incident report)</option>
+                                <option value="REJECTED">REJECTED (Dismiss incident / False report)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="actionTaken">Action Taken / Asset Transition</label>
+                            <select id="actionTaken" name="actionTaken" class="form-control">
+                                <option value="UNDER_REPAIR">Send for Repair (Mark Asset as UNDER_REPAIR)</option>
+                                <option value="DAMAGED">Confirm Damage (Quarantine Asset as DAMAGED)</option>
+                                <option value="LOST">Confirm Lost Asset (Mark Asset as LOST)</option>
+                                <option value="RETIRED">Write-Off / Retire Asset (Mark Asset as RETIRED)</option>
+                                <option value="NO_ACTION">No Action Required / False Alarm</option>
+                            </select>
+                            <small class="secondary-text">Asset will remain unavailable until an explicit return-to-service sign-off occurs.</small>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="decision">Decision Notes &amp; Findings *</label>
+                            <textarea id="decision" name="decision" class="form-control" rows="3" maxlength="500" required
+                                      placeholder="Explain findings, assessment, and reason for this resolution..."></textarea>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 18px; display: flex; gap: 12px; align-items: center;">
+                        <button class="primary-button" type="submit" style="background: #dc2626;">
+                            Submit Resolution
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Return to Service Panel (when asset is UNDER_REPAIR, DAMAGED, or UNDER_INSPECTION) -->
+            <div th:if="${hasReviewPrivilege and (incident.property.status == 'UNDER_REPAIR' or incident.property.status == 'DAMAGED' or incident.property.status == 'UNDER_INSPECTION')}"
+                 style="margin-top: 30px; padding: 22px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;">
+                <h3 style="font-size: 16px; color: #166534; margin-bottom: 6px;">Return Asset to Service</h3>
+                <p style="color: #14532d; font-size: 14px; margin-bottom: 16px;">
+                    Once repairs or inspection are certified complete, return the asset to AVAILABLE status in good condition.
+                </p>
+
+                <form th:action="@{/incidents/return-to-service}" method="post">
+                    <input type="hidden" name="propertyId" th:value="${incident.property.propertyId}">
+
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="areaId">Destination Physical Area</label>
+                            <select id="areaId" name="areaId" class="form-control">
+                                <option th:each="a : ${areas}"
+                                        th:value="${a.areaId}"
+                                        th:selected="${a.areaId == incident.property.area.areaId}"
+                                        th:text="${a.name}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="notes">Certification &amp; Inspection Notes</label>
+                            <textarea id="notes" name="notes" class="form-control" rows="2" maxlength="500"
+                                      placeholder="Repairs completed, inspected and verified in good working order..."></textarea>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 16px;">
+                        <button class="primary-button" type="submit" style="background: #16a34a;">
+                            &check; Certify &amp; Return Asset to Service
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 18px; border-top: 1px solid #e2e8f0;">
+                <a class="secondary-button" th:href="@{/incidents}">
+                    Back to Incidents
+                </a>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

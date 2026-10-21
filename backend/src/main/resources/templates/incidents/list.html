@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Incidents | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/properties.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">DAMAGE &amp; LOSS MANAGEMENT</p>
+            <h1>Property Incidents</h1>
+            <p>Report and track damaged, broken, or lost organizational assets.</p>
+        </section>
+
+        <section class="property-panel">
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>My Reported Incidents</h2>
+                    <p>Incidents you have submitted regarding organizational equipment.</p>
+                </div>
+
+                <div class="property-actions">
+                    <a class="primary-button" th:href="@{/incidents/new}">
+                        + Report Incident
+                    </a>
+
+                    <a class="back-link" th:href="@{/}">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="property-table">
+                    <thead>
+                        <tr>
+                            <th>Incident ID</th>
+                            <th>Property Code</th>
+                            <th>Item Name</th>
+                            <th>Incident Type</th>
+                            <th>Status</th>
+                            <th>Reported At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="inc : ${myIncidents}">
+                            <td class="property-code" th:text="'INC-' + ${inc.incidentId}"></td>
+
+                            <td>
+                                <strong th:text="${inc.property.propertyCode}"></strong>
+                            </td>
+
+                            <td th:text="${inc.property.propertyType.name}"></td>
+
+                            <td>
+                                <span class="property-condition"
+                                      th:classappend="${inc.incidentType == 'LOST' ? 'status-lost' : (inc.incidentType == 'BROKEN' ? 'condition-broken' : 'condition-damaged')}"
+                                      th:text="${inc.incidentType}">DAMAGE</span>
+                            </td>
+
+                            <td>
+                                <span th:class="'property-status status-' + ${#strings.toLowerCase(inc.status)}"
+                                      th:text="${inc.status}">OPEN</span>
+                            </td>
+
+                            <td th:text="${inc.createdAt != null ? #temporals.format(inc.createdAt, 'yyyy-MM-dd HH:mm') : 'Just now'}"></td>
+
+                            <td>
+                                <a class="detail-link" th:href="@{/incidents/{id}(id=${inc.incidentId})}">
+                                    View Details &rarr;
+                                </a>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(myIncidents)}">
+                            <td colspan="7" class="empty-message">
+                                You have not reported any property incidents.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Open Incidents Queue for Managers and Administrators -->
+        <section class="property-panel" th:if="${hasReviewPrivilege}">
+            <div class="section-heading">
+                <div>
+                    <h2>Open Incident Queue (<span th:text="${openCount}">0</span>)</h2>
+                    <p>Reported damage and loss incidents awaiting management review and resolution.</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="property-table">
+                    <thead>
+                        <tr>
+                            <th>Incident ID</th>
+                            <th>Reported By</th>
+                            <th>Property Code</th>
+                            <th>Item Name</th>
+                            <th>Incident Type</th>
+                            <th>Status</th>
+                            <th>Reported At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="inc : ${openIncidents}">
+                            <td class="property-code" th:text="'INC-' + ${inc.incidentId}"></td>
+
+                            <td>
+                                <strong th:text="${inc.reportedBy.firstName + ' ' + inc.reportedBy.lastName}"></strong>
+                                <br>
+                                <small class="secondary-text" th:text="${inc.reportedBy.email}"></small>
+                            </td>
+
+                            <td>
+                                <strong th:text="${inc.property.propertyCode}"></strong>
+                            </td>
+
+                            <td th:text="${inc.property.propertyType.name}"></td>
+
+                            <td>
+                                <span class="property-condition"
+                                      th:classappend="${inc.incidentType == 'LOST' ? 'status-lost' : (inc.incidentType == 'BROKEN' ? 'condition-broken' : 'condition-damaged')}"
+                                      th:text="${inc.incidentType}">DAMAGE</span>
+                            </td>
+
+                            <td>
+                                <span class="property-status status-open">OPEN</span>
+                            </td>
+
+                            <td th:text="${inc.createdAt != null ? #temporals.format(inc.createdAt, 'yyyy-MM-dd HH:mm') : 'Just now'}"></td>
+
+                            <td>
+                                <a class="detail-link" th:href="@{/incidents/{id}(id=${inc.incidentId})}">
+                                    Review &amp; Resolve &rarr;
+                                </a>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(openIncidents)}">
+                            <td colspan="8" class="empty-message">
+                                No open incidents awaiting review.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- All Incidents Register for Managers and Administrators -->
+        <section class="property-panel" th:if="${hasReviewPrivilege}">
+            <div class="section-heading">
+                <div>
+                    <h2>All Organizational Incidents</h2>
+                    <p>Complete historical register of damage and loss incidents across all departments.</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="property-table">
+                    <thead>
+                        <tr>
+                            <th>Incident ID</th>
+                            <th>Property Code</th>
+                            <th>Reported By</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Reported At</th>
+                            <th>Reviewed By</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="inc : ${allIncidents}">
+                            <td class="property-code" th:text="'INC-' + ${inc.incidentId}"></td>
+
+                            <td>
+                                <strong th:text="${inc.property.propertyCode}"></strong>
+                            </td>
+
+                            <td th:text="${inc.reportedBy.firstName + ' ' + inc.reportedBy.lastName}"></td>
+
+                            <td>
+                                <span class="property-condition"
+                                      th:classappend="${inc.incidentType == 'LOST' ? 'status-lost' : (inc.incidentType == 'BROKEN' ? 'condition-broken' : 'condition-damaged')}"
+                                      th:text="${inc.incidentType}">DAMAGE</span>
+                            </td>
+
+                            <td>
+                                <span th:class="'property-status status-' + ${#strings.toLowerCase(inc.status)}"
+                                      th:text="${inc.status}">OPEN</span>
+                            </td>
+
+                            <td th:text="${inc.createdAt != null ? #temporals.format(inc.createdAt, 'yyyy-MM-dd HH:mm') : 'Just now'}"></td>
+
+                            <td th:text="${inc.reviewedBy != null ? inc.reviewedBy.firstName + ' ' + inc.reviewedBy.lastName : '-'}"></td>
+
+                            <td>
+                                <a class="detail-link" th:href="@{/incidents/{id}(id=${inc.incidentId})}">
+                                    View &rarr;
+                                </a>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(allIncidents)}">
+                            <td colspan="8" class="empty-message">
+                                No property incidents recorded in the system.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

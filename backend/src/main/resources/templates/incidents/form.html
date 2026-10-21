@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Incident | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/properties.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">DAMAGE &amp; LOSS MANAGEMENT</p>
+            <h1>Report Property Incident</h1>
+            <p>Submit an incident report for damaged, broken, or lost organizational equipment.</p>
+        </section>
+
+        <section class="property-panel">
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <form th:action="@{/incidents}" method="post">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="propertyId">Select Identifiable Asset *</label>
+                        <select id="propertyId" name="propertyId" class="form-control" required>
+                            <option value="">-- Choose an asset by property code --</option>
+                            <option th:each="p : ${properties}"
+                                    th:value="${p.propertyId}"
+                                    th:selected="${selectedPropertyId != null and selectedPropertyId == p.propertyId}"
+                                    th:text="${p.propertyCode + ' — ' + p.propertyType.name + ' (S/N: ' + (p.serialNumber != null ? p.serialNumber : 'None') + ' | Status: ' + p.status + ' | Area: ' + p.area.name + ')'}">
+                            </option>
+                        </select>
+                        <small class="secondary-text">Select the specific physical asset involved in the incident.</small>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="incidentType">Incident Type *</label>
+                        <select id="incidentType" name="incidentType" class="form-control" required>
+                            <option value="">-- Select incident classification --</option>
+                            <option value="DAMAGE">Physical Damage (Casing, screen cracked, liquid spill)</option>
+                            <option value="BROKEN">Hardware / Functional Breakdown (Will not power on, internal failure)</option>
+                            <option value="LOST">Lost or Stolen Equipment</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="description">Incident Description &amp; Circumstances *</label>
+                        <textarea id="description" name="description" class="form-control" rows="4" maxlength="1000" required
+                                  placeholder="Provide clear details on how the damage or loss occurred, location, date observed, and any other relevant context..."></textarea>
+                        <small class="secondary-text">Detailed descriptions help management expedite repairs and assessments.</small>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 24px; display: flex; gap: 12px; align-items: center;">
+                    <button class="primary-button" type="submit" style="background: #dc2626;">
+                        Submit Incident Report
+                    </button>
+
+                    <a class="back-link" th:href="@{/incidents}">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

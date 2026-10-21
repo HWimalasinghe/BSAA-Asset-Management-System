@@ -139,4 +139,17 @@ class SecurityAuthorizationTest {
         mockMvc.perform(get("/requests"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void unauthenticatedUserShouldBeRedirectedFromIncidents() throws Exception {
+        mockMvc.perform(get("/incidents"))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    @WithMockUser(username = "staff@example.com", roles = {"OFFICE_STAFF"})
+    void officeStaffCanAccessIncidents() throws Exception {
+        mockMvc.perform(get("/incidents"))
+                .andExpect(status().isOk());
+    }
 }

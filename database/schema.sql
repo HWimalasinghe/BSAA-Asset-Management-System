@@ -463,10 +463,10 @@ CREATE TABLE property_incidents (
         ON UPDATE RESTRICT,
 
     CONSTRAINT chk_incidents_type
-        CHECK (incident_type IN ('DAMAGE', 'BROKEN')),
+        CHECK (incident_type IN ('DAMAGE', 'BROKEN', 'LOST')),
 
     CONSTRAINT chk_incidents_status
-        CHECK (status IN ('OPEN', 'APPROVED', 'REJECTED')),
+        CHECK (status IN ('OPEN', 'APPROVED', 'REJECTED', 'RESOLVED')),
 
     INDEX idx_incidents_property_id (property_id),
     INDEX idx_incidents_reported_by (reported_by),
