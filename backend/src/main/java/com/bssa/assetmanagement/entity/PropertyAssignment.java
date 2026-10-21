@@ -45,6 +45,10 @@ public class PropertyAssignment {
         return assignmentId;
     }
 
+    public void setAssignmentId(Long assignmentId) {
+        this.assignmentId = assignmentId;
+    }
+
     public Property getProperty() {
         return property;
     }

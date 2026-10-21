@@ -1,17 +1,30 @@
 package com.bssa.assetmanagement.service;
 
 import com.bssa.assetmanagement.entity.AppUser;
+import com.bssa.assetmanagement.entity.PhysicalArea;
+import com.bssa.assetmanagement.entity.Property;
+import com.bssa.assetmanagement.entity.PropertyAssignment;
 import com.bssa.assetmanagement.entity.PropertyRequest;
 import com.bssa.assetmanagement.entity.PropertyRequestItem;
+import com.bssa.assetmanagement.entity.PropertyStatusHistory;
 import com.bssa.assetmanagement.entity.PropertyType;
+import com.bssa.assetmanagement.entity.Role;
 import com.bssa.assetmanagement.repository.AppUserRepository;
+import com.bssa.assetmanagement.repository.PhysicalAreaRepository;
+import com.bssa.assetmanagement.repository.PropertyAssignmentRepository;
+import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyRequestRepository;
+import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
 import com.bssa.assetmanagement.repository.PropertyTypeRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class PropertyRequestService {
@@ -21,14 +34,26 @@ public class PropertyRequestService {
     private final PropertyRequestRepository requestRepository;
     private final PropertyTypeRepository propertyTypeRepository;
     private final AppUserRepository appUserRepository;
+    private final PropertyRepository propertyRepository;
+    private final PhysicalAreaRepository physicalAreaRepository;
+    private final PropertyAssignmentRepository assignmentRepository;
+    private final PropertyStatusHistoryRepository statusHistoryRepository;
 
     public PropertyRequestService(
             PropertyRequestRepository requestRepository,
             PropertyTypeRepository propertyTypeRepository,
-            AppUserRepository appUserRepository) {
+            AppUserRepository appUserRepository,
+            PropertyRepository propertyRepository,
+            PhysicalAreaRepository physicalAreaRepository,
+            PropertyAssignmentRepository assignmentRepository,
+            PropertyStatusHistoryRepository statusHistoryRepository) {
         this.requestRepository = requestRepository;
         this.propertyTypeRepository = propertyTypeRepository;
         this.appUserRepository = appUserRepository;
+        this.propertyRepository = propertyRepository;
+        this.physicalAreaRepository = physicalAreaRepository;
+        this.assignmentRepository = assignmentRepository;
+        this.statusHistoryRepository = statusHistoryRepository;
     }
 
     @Transactional
@@ -176,11 +201,24 @@ public class PropertyRequestService {
 
         AppUser reviewer = getActiveUser(reviewerEmail);
 
+        if (!isAuthorizedApprover(reviewer)) {
+            throw new AccessDeniedException(
+                    "Unauthorized to review asset requests. Only authorized Inventory Managers or Administrators can make request decisions.");
+        }
+
         PropertyRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found."));
 
         if (!"PENDING".equals(request.getStatus())) {
-            throw new IllegalStateException("Only pending requests can be reviewed.");
+            throw new IllegalStateException(
+                    "Only requests in a pending state can be decided. Current status: " + request.getStatus());
+        }
+
+        // CRITICAL BUSINESS RULE: Self-approval prevention
+        if (request.getRequester().getEmail().equalsIgnoreCase(reviewer.getEmail())
+                || (request.getRequester().getUserId() != null && request.getRequester().getUserId().equals(reviewer.getUserId()))) {
+            throw new IllegalStateException(
+                    "Inventory Managers are not permitted to approve or reject their own requests. Another authorized Inventory Manager must make the decision.");
         }
 
         if (!"APPROVED".equals(newStatus) && !"REJECTED".equals(newStatus)) {
@@ -193,7 +231,7 @@ public class PropertyRequestService {
 
         request.setStatus(newStatus);
         request.setReviewedBy(reviewer);
-        request.setReviewedAt(java.time.LocalDateTime.now());
+        request.setReviewedAt(LocalDateTime.now());
         if ("REJECTED".equals(newStatus)) {
             request.setRejectionReason(rejectionReason.trim());
         } else {
@@ -201,6 +239,131 @@ public class PropertyRequestService {
         }
 
         return requestRepository.save(request);
+    }
+
+    @Transactional
+    public PropertyAssignment fulfillRequest(
+            Long requestId,
+            Long propertyId,
+            Long areaId,
+            String conditionAtIssue,
+            String notes,
+            String issuerEmail) {
+
+        if (propertyId == null) {
+            throw new IllegalArgumentException("Please select a property to allocate.");
+        }
+
+        return fulfillRequestMultiple(requestId, List.of(propertyId), areaId, conditionAtIssue, notes, issuerEmail).get(0);
+    }
+
+    @Transactional
+    public List<PropertyAssignment> fulfillRequestMultiple(
+            Long requestId,
+            List<Long> propertyIds,
+            Long areaId,
+            String conditionAtIssue,
+            String notes,
+            String issuerEmail) {
+
+        AppUser issuer = getActiveUser(issuerEmail);
+
+        if (!isAuthorizedApprover(issuer)) {
+            throw new AccessDeniedException(
+                    "Unauthorized to fulfill asset requests. Only authorized Inventory Managers or Administrators can fulfill requests.");
+        }
+
+        PropertyRequest request = requestRepository.findWithDetailsByRequestId(requestId)
+                .or(() -> requestRepository.findById(requestId))
+                .orElseThrow(() -> new IllegalArgumentException("Request not found."));
+
+        if (!"APPROVED".equals(request.getStatus())) {
+            throw new IllegalStateException(
+                    "Only approved requests can be fulfilled. Current status is " + request.getStatus() + ".");
+        }
+
+        if (propertyIds == null || propertyIds.isEmpty()) {
+            throw new IllegalArgumentException("Please select at least one property to allocate.");
+        }
+
+        Set<Long> uniquePropertyIds = new HashSet<>(propertyIds);
+        if (uniquePropertyIds.size() != propertyIds.size()) {
+            throw new IllegalArgumentException("Duplicate properties selected for fulfillment.");
+        }
+
+        if (areaId == null) {
+            throw new IllegalArgumentException("Please select a physical area.");
+        }
+
+        PhysicalArea area = physicalAreaRepository.findById(areaId)
+                .orElseThrow(() -> new IllegalArgumentException("Physical area not found."));
+
+        if (!area.isActive()) {
+            throw new IllegalArgumentException("Please select an active physical area.");
+        }
+
+        String condition = (conditionAtIssue == null || conditionAtIssue.isBlank()) ? "GOOD" : conditionAtIssue;
+        if (!"GOOD".equals(condition) && !"DAMAGED".equals(condition) && !"BROKEN".equals(condition)) {
+            throw new IllegalArgumentException("Invalid condition at issue.");
+        }
+
+        PropertyType requestedType = !request.getItems().isEmpty() ? request.getItems().get(0).getPropertyType() : null;
+
+        List<PropertyAssignment> assignments = new ArrayList<>();
+
+        for (Long propertyId : propertyIds) {
+            Property property = propertyRepository.findById(propertyId)
+                    .orElseThrow(() -> new IllegalArgumentException("Property not found with ID: " + propertyId));
+
+            if (requestedType != null && !property.getPropertyType().getPropertyTypeId().equals(requestedType.getPropertyTypeId())) {
+                throw new IllegalArgumentException(
+                        "Property " + property.getPropertyCode() + " does not match the requested type: " + requestedType.getName());
+            }
+
+            if (!"AVAILABLE".equals(property.getStatus())) {
+                throw new IllegalArgumentException(
+                        "Property " + property.getPropertyCode() + " is not available (status: " + property.getStatus() + ").");
+            }
+
+            if (!"GOOD".equals(property.getCondition())) {
+                throw new IllegalArgumentException(
+                        "Property " + property.getPropertyCode() + " is not in good condition (condition: " + property.getCondition() + ").");
+            }
+
+            if (assignmentRepository.hasActiveAssignment(property.getPropertyId())) {
+                throw new IllegalArgumentException(
+                        "Property " + property.getPropertyCode() + " already has an active assignment and cannot be allocated.");
+            }
+
+            PropertyAssignment assignment = new PropertyAssignment();
+            assignment.setProperty(property);
+            assignment.setEmployee(request.getRequester());
+            assignment.setIssuedBy(issuer);
+            assignment.setArea(area);
+            assignment.setConditionAtIssue(condition);
+            assignment.setNotes("Fulfilled for request REQ-" + request.getRequestId()
+                    + (notes != null && !notes.isBlank() ? " - " + notes.trim() : ""));
+
+            String oldStatus = property.getStatus();
+            property.setStatus("ASSIGNED");
+            propertyRepository.save(property);
+
+            PropertyStatusHistory history = new PropertyStatusHistory();
+            history.setProperty(property);
+            history.setOldStatus(oldStatus);
+            history.setNewStatus("ASSIGNED");
+            history.setChangedBy(issuer);
+            history.setReason("Fulfilled request REQ-" + request.getRequestId() + " for "
+                    + request.getRequester().getFirstName() + " " + request.getRequester().getLastName());
+            statusHistoryRepository.save(history);
+
+            assignments.add(assignmentRepository.save(assignment));
+        }
+
+        request.setStatus("FULFILLED");
+        requestRepository.save(request);
+
+        return assignments;
     }
 
     @Transactional(readOnly = true)
@@ -227,6 +390,30 @@ public class PropertyRequestService {
     @Transactional(readOnly = true)
     public List<PropertyRequest> getAllRequests() {
         return requestRepository.findAllByOrderByRequestIdDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PropertyRequest> getPendingRequests() {
+        return requestRepository.findAllByStatusOrderByRequestIdDesc("PENDING");
+    }
+
+    @Transactional(readOnly = true)
+    public long countPendingRequests() {
+        return requestRepository.countByStatus("PENDING");
+    }
+
+    public boolean isAuthorizedApprover(AppUser user) {
+        if (user == null || !user.isActive()) {
+            return false;
+        }
+        return user.getRoles().stream()
+                .map(Role::getName)
+                .anyMatch(r -> r.equals("INVENTORY_MANAGER")
+                        || r.equals("INVENTORY_ADMIN")
+                        || r.equals("SYSTEM_ADMIN")
+                        || r.equals("ROLE_INVENTORY_MANAGER")
+                        || r.equals("ROLE_INVENTORY_ADMIN")
+                        || r.equals("ROLE_SYSTEM_ADMIN"));
     }
 
     private AppUser getActiveUser(String email) {

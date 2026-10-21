@@ -157,9 +157,22 @@
                     <strong style="color: #166534;">This request has been approved and is queued for fulfillment.</strong>
                 </div>
 
+                <div th:if="${request.status == 'FULFILLED'}" style="margin-top: 10px; padding: 12px 16px; background: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                    <strong style="color: #1e40af;">This request has been fulfilled. The requested property has been issued and assigned.</strong>
+                </div>
+
                 <div th:if="${request.status == 'CANCELLED'}" style="margin-top: 10px; padding: 12px 16px; background: #f1f5f9; border-left: 4px solid #94a3b8; border-radius: 6px;">
                     <strong style="color: #475569;">This request was cancelled by the requester.</strong>
                 </div>
+            </div>
+
+            <!-- Self-approval notice for Managers -->
+            <div th:if="${hasReviewPrivilege and isSelfRequest and request.status == 'PENDING'}"
+                 style="margin-top: 24px; padding: 14px 18px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px;">
+                <strong style="color: #92400e;">Self-Approval Policy Restriction:</strong>
+                <span style="color: #78350f;">
+                    You submitted this asset request. As an Inventory Manager, you cannot approve or reject your own request. Another authorized manager must review and make the decision.
+                </span>
             </div>
 
             <!-- Actions Panel -->
@@ -182,8 +195,8 @@
                     </button>
                 </form>
 
-                <!-- Reviewer actions when PENDING -->
-                <form th:if="${hasReviewPrivilege and request.status == 'PENDING'}"
+                <!-- Reviewer actions when PENDING (only allowed for non-self requests) -->
+                <form th:if="${hasReviewPrivilege and !isSelfRequest and request.status == 'PENDING'}"
                       th:action="@{/requests/{id}/review(id=${request.requestId})}"
                       method="post"
                       style="display: inline;">
@@ -193,7 +206,7 @@
                     </button>
                 </form>
 
-                <form th:if="${hasReviewPrivilege and request.status == 'PENDING'}"
+                <form th:if="${hasReviewPrivilege and !isSelfRequest and request.status == 'PENDING'}"
                       th:action="@{/requests/{id}/review(id=${request.requestId})}"
                       method="post"
                       style="display: inline-flex; gap: 8px; align-items: center;">
@@ -207,6 +220,14 @@
                         Reject Request
                     </button>
                 </form>
+
+                <!-- Fulfillment action when APPROVED -->
+                <a th:if="${hasReviewPrivilege and request.status == 'APPROVED'}"
+                   class="primary-button"
+                   style="background: #2563eb;"
+                   th:href="@{/requests/{id}/fulfill(id=${request.requestId})}">
+                    &rarr; Fulfill / Issue Asset
+                </a>
 
                 <a class="secondary-button" th:href="@{/requests}">
                     Back to Requests

@@ -18,4 +18,9 @@ public interface PropertyRequestRepository extends JpaRepository<PropertyRequest
 
     @EntityGraph(attributePaths = {"items", "items.propertyType", "items.propertyType.category", "requester", "reviewedBy"})
     Optional<PropertyRequest> findWithDetailsByRequestId(Long requestId);
+
+    @EntityGraph(attributePaths = {"items", "items.propertyType", "items.propertyType.category", "requester", "reviewedBy"})
+    List<PropertyRequest> findAllByStatusOrderByRequestIdDesc(String status);
+
+    long countByStatus(String status);
 }

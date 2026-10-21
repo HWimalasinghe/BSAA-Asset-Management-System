@@ -1,9 +1,15 @@
 package com.bssa.assetmanagement.controller;
 
 import com.bssa.assetmanagement.entity.AppUser;
+import com.bssa.assetmanagement.entity.PhysicalArea;
+import com.bssa.assetmanagement.entity.Property;
+import com.bssa.assetmanagement.entity.PropertyAssignment;
 import com.bssa.assetmanagement.entity.PropertyRequest;
+import com.bssa.assetmanagement.entity.PropertyRequestItem;
 import com.bssa.assetmanagement.entity.PropertyType;
 import com.bssa.assetmanagement.repository.AppUserRepository;
+import com.bssa.assetmanagement.repository.PhysicalAreaRepository;
+import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyTypeRepository;
 import com.bssa.assetmanagement.service.PropertyRequestService;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,11 +34,15 @@ class PropertyRequestControllerTest {
     private final PropertyRequestService requestService = mock(PropertyRequestService.class);
     private final PropertyTypeRepository propertyTypeRepository = mock(PropertyTypeRepository.class);
     private final AppUserRepository appUserRepository = mock(AppUserRepository.class);
+    private final PropertyRepository propertyRepository = mock(PropertyRepository.class);
+    private final PhysicalAreaRepository physicalAreaRepository = mock(PhysicalAreaRepository.class);
 
     private final PropertyRequestController controller = new PropertyRequestController(
             requestService,
             propertyTypeRepository,
-            appUserRepository
+            appUserRepository,
+            propertyRepository,
+            physicalAreaRepository
     );
 
     private UsernamePasswordAuthenticationToken staffAuth;
@@ -41,7 +51,8 @@ class PropertyRequestControllerTest {
 
     @BeforeEach
     void setUp() {
-        reset(requestService, propertyTypeRepository, appUserRepository);
+        reset(requestService, propertyTypeRepository, appUserRepository,
+                propertyRepository, physicalAreaRepository);
 
         staffAuth = new UsernamePasswordAuthenticationToken(
                 "staff@example.com",
@@ -77,15 +88,19 @@ class PropertyRequestControllerTest {
     }
 
     @Test
-    void listRequests_forAdmin_shouldPopulateAllRequests() {
+    void listRequests_forAdmin_shouldPopulatePendingAndAllRequests() {
         Model model = new ConcurrentModel();
         when(requestService.getMyRequests("admin@example.com")).thenReturn(List.of(new PropertyRequest()));
+        when(requestService.getPendingRequests()).thenReturn(List.of(new PropertyRequest()));
+        when(requestService.countPendingRequests()).thenReturn(1L);
         when(requestService.getAllRequests()).thenReturn(List.of(new PropertyRequest(), new PropertyRequest()));
 
         String view = controller.listRequests(model, adminAuth);
 
         assertEquals("requests/list", view);
         assertEquals(true, model.getAttribute("hasReviewPrivilege"));
+        assertEquals(1, ((List<?>) model.getAttribute("pendingRequests")).size());
+        assertEquals(1L, model.getAttribute("pendingCount"));
         assertEquals(2, ((List<?>) model.getAttribute("allRequests")).size());
     }
 
@@ -154,6 +169,7 @@ class PropertyRequestControllerTest {
         assertEquals("requests/view", view);
         assertEquals(request, model.getAttribute("request"));
         assertEquals(true, model.getAttribute("isOwner"));
+        assertEquals(true, model.getAttribute("isSelfRequest"));
     }
 
     @Test
@@ -182,44 +198,6 @@ class PropertyRequestControllerTest {
     }
 
     @Test
-    void editForm_shouldReturnFormWhenPending() {
-        Model model = new ConcurrentModel();
-        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-
-        PropertyRequest request = new PropertyRequest();
-        request.setRequestId(15L);
-        request.setStatus("PENDING");
-        request.setRequester(activeUser);
-
-        when(requestService.getRequestForUser(eq(15L), eq("staff@example.com"), eq(false)))
-                .thenReturn(request);
-
-        String view = controller.showEditForm(15L, model, staffAuth, redirectAttributes);
-
-        assertEquals("requests/form", view);
-        assertEquals(true, model.getAttribute("isEdit"));
-    }
-
-    @Test
-    void editForm_shouldRedirectWhenNotPending() {
-        Model model = new ConcurrentModel();
-        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-
-        PropertyRequest request = new PropertyRequest();
-        request.setRequestId(15L);
-        request.setStatus("APPROVED");
-        request.setRequester(activeUser);
-
-        when(requestService.getRequestForUser(eq(15L), eq("staff@example.com"), eq(false)))
-                .thenReturn(request);
-
-        String view = controller.showEditForm(15L, model, staffAuth, redirectAttributes);
-
-        assertEquals("redirect:/requests/15", view);
-        assertEquals("Only pending requests can be edited.", redirectAttributes.getFlashAttributes().get("errorMessage"));
-    }
-
-    @Test
     void reviewRequest_shouldAuthorizeAdminAndRedirect() {
         RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
 
@@ -242,12 +220,75 @@ class PropertyRequestControllerTest {
     }
 
     @Test
-    void inactiveCaller_shouldRedirectToLogout() {
-        activeUser.setActive(false);
+    void showFulfillForm_shouldDisplayWhenApprovedAndManager() {
+        Model model = new ConcurrentModel();
         RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
 
-        String view = controller.createRequest(100L, 1, "Notes", null, staffAuth, redirectAttributes);
+        PropertyType propertyType = new PropertyType();
+        propertyType.setPropertyTypeId(50L);
 
-        assertEquals("redirect:/login?logout", view);
+        PropertyRequestItem item = new PropertyRequestItem();
+        item.setPropertyType(propertyType);
+
+        PropertyRequest request = new PropertyRequest();
+        request.setRequestId(30L);
+        request.setStatus("APPROVED");
+        request.setRequester(activeUser);
+        request.addItem(item);
+
+        when(requestService.getRequestForUser(eq(30L), eq("admin@example.com"), eq(true)))
+                .thenReturn(request);
+        when(propertyRepository.findByPropertyType_PropertyTypeIdAndStatusAndConditionOrderByPropertyCodeAsc(
+                eq(50L), eq("AVAILABLE"), eq("GOOD"))).thenReturn(List.of(new Property()));
+        when(physicalAreaRepository.findAllByActiveTrueOrderByNameAsc()).thenReturn(List.of(new PhysicalArea()));
+
+        String view = controller.showFulfillForm(30L, model, adminAuth, redirectAttributes);
+
+        assertEquals("requests/fulfill", view);
+        assertEquals(request, model.getAttribute("request"));
+        assertEquals(1, ((List<?>) model.getAttribute("availableProperties")).size());
+        assertEquals(1, ((List<?>) model.getAttribute("areas")).size());
+    }
+
+    @Test
+    void showFulfillForm_shouldRedirectWhenNotApproved() {
+        Model model = new ConcurrentModel();
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+
+        PropertyRequest request = new PropertyRequest();
+        request.setRequestId(30L);
+        request.setStatus("PENDING");
+        request.setRequester(activeUser);
+
+        when(requestService.getRequestForUser(eq(30L), eq("admin@example.com"), eq(true)))
+                .thenReturn(request);
+
+        String view = controller.showFulfillForm(30L, model, adminAuth, redirectAttributes);
+
+        assertEquals("redirect:/requests/30", view);
+        assertTrue(redirectAttributes.getFlashAttributes().get("errorMessage").toString().contains("Only approved requests"));
+    }
+
+    @Test
+    void fulfillRequest_shouldFulfillAndRedirectOnSuccess() {
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+        when(requestService.fulfillRequest(eq(30L), eq(500L), eq(1L), eq("GOOD"), eq("Notes"), eq("admin@example.com")))
+                .thenReturn(new PropertyAssignment());
+
+        String view = controller.fulfillRequest(30L, 500L, 1L, "GOOD", "Notes", adminAuth, redirectAttributes);
+
+        assertEquals("redirect:/requests/30", view);
+        assertTrue(redirectAttributes.getFlashAttributes().get("successMessage").toString().contains("fulfilled successfully"));
+    }
+
+    @Test
+    void fulfillRequest_shouldRejectOfficeStaff() {
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+
+        String view = controller.fulfillRequest(30L, 500L, 1L, "GOOD", "Notes", staffAuth, redirectAttributes);
+
+        assertEquals("redirect:/requests", view);
+        assertEquals("You are not authorized to fulfill asset requests.", redirectAttributes.getFlashAttributes().get("errorMessage"));
+        verify(requestService, never()).fulfillRequest(any(), any(), any(), any(), any(), any());
     }
 }

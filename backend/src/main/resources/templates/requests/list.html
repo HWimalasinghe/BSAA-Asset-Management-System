@@ -117,6 +117,80 @@
             </div>
         </section>
 
+        <!-- Pending Requests Queue for Inventory Managers -->
+        <section class="property-panel" th:if="${hasReviewPrivilege}">
+            <div class="section-heading">
+                <div>
+                    <h2>Pending Review Queue (<span th:text="${pendingCount}">0</span>)</h2>
+                    <p>Asset requests awaiting approval or rejection by inventory management.</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="property-table">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Requester</th>
+                            <th>Requested Item</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Status</th>
+                            <th>Requested At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="req : ${pendingRequests}">
+                            <td class="property-code" th:text="'REQ-' + ${req.requestId}"></td>
+
+                            <td>
+                                <strong th:text="${req.requester.firstName + ' ' + req.requester.lastName}"></strong>
+                                <br>
+                                <small class="secondary-text" th:text="${req.requester.email}"></small>
+                            </td>
+
+                            <td>
+                                <span th:if="${!#lists.isEmpty(req.items)}"
+                                      th:text="${req.items[0].propertyType.name}"></span>
+                                <span th:if="${#lists.isEmpty(req.items)}" class="secondary-text">N/A</span>
+                            </td>
+
+                            <td>
+                                <span th:if="${!#lists.isEmpty(req.items)}"
+                                      th:text="${req.items[0].propertyType.category.name}"></span>
+                                <span th:if="${#lists.isEmpty(req.items)}" class="secondary-text">N/A</span>
+                            </td>
+
+                            <td>
+                                <strong th:if="${!#lists.isEmpty(req.items)}"
+                                        th:text="${req.items[0].quantity}"></strong>
+                                <span th:if="${#lists.isEmpty(req.items)}">-</span>
+                            </td>
+
+                            <td>
+                                <span class="property-status status-pending">PENDING</span>
+                            </td>
+
+                            <td th:text="${req.requestedAt != null ? #temporals.format(req.requestedAt, 'yyyy-MM-dd HH:mm') : 'Just now'}"></td>
+
+                            <td>
+                                <a class="detail-link" th:href="@{/requests/{id}(id=${req.requestId})}">
+                                    Review Decision &rarr;
+                                </a>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(pendingRequests)}">
+                            <td colspan="8" class="empty-message">
+                                No pending requests awaiting review.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- All Requests section for Inventory Admins and Managers -->
         <section class="property-panel" th:if="${hasReviewPrivilege}">
             <div class="section-heading">

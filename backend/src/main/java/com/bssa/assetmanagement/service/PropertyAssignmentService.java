@@ -54,6 +54,11 @@ public class PropertyAssignmentService {
                     "Only available properties in good condition can be assigned.");
         }
 
+        if (assignmentRepository.hasActiveAssignment(propertyId)) {
+            throw new IllegalArgumentException(
+                    "Property already has an active assignment and cannot be assigned again.");
+        }
+
         if (!"GOOD".equals(conditionAtIssue)
                 && !"DAMAGED".equals(conditionAtIssue)
                 && !"BROKEN".equals(conditionAtIssue)) {

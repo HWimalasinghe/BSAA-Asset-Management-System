@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Fulfill Request REQ-' + ${request.requestId} + ' | BSAA Asset Management'">Fulfill Request | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/properties.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-button" type="submit">Sign out</button>
+        </form>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">REQUEST FULFILLMENT</p>
+            <h1 th:text="'Fulfill Request REQ-' + ${request.requestId}">Fulfill Asset Request</h1>
+            <p>Allocate and issue an available physical asset to fulfill this approved request.</p>
+        </section>
+
+        <section class="property-panel">
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Approved Request Details</h2>
+                    <p>Review the requester and approved item requirements.</p>
+                </div>
+                <div>
+                    <span class="property-status status-approved">APPROVED</span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 18px 0; padding: 18px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Recipient (Requester)</span>
+                    <strong th:text="${request.requester.firstName + ' ' + request.requester.lastName}">Staff Member</strong>
+                    <div style="font-size: 13px; color: #64748b;" th:text="${request.requester.email}">staff@example.com</div>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Requested Type</span>
+                    <strong th:if="${!#lists.isEmpty(request.items)}"
+                            th:text="${request.items[0].propertyType.name}">Laptop</strong>
+                    <div style="font-size: 13px; color: #64748b;"
+                         th:if="${!#lists.isEmpty(request.items)}"
+                         th:text="'Category: ' + ${request.items[0].propertyType.category.name}"></div>
+                </div>
+
+                <div>
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Quantity</span>
+                    <strong style="font-size: 16px;"
+                            th:if="${!#lists.isEmpty(request.items)}"
+                            th:text="${request.items[0].quantity}">1</strong>
+                </div>
+
+                <div th:if="${request.reviewedBy != null}">
+                    <span class="secondary-text" style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;">Approved By</span>
+                    <strong th:text="${request.reviewedBy.firstName + ' ' + request.reviewedBy.lastName}">Manager</strong>
+                    <div style="font-size: 13px; color: #64748b;"
+                         th:text="${#temporals.format(request.reviewedAt, 'yyyy-MM-dd HH:mm')}"></div>
+                </div>
+            </div>
+
+            <form th:action="@{/requests/{id}/fulfill(id=${request.requestId})}" method="post" style="margin-top: 24px;">
+                <div class="form-grid">
+
+                    <div class="form-group full-width">
+                        <label for="propertyId">Select Physical Asset to Allocate *</label>
+                        <select id="propertyId" name="propertyId" class="form-control" required
+                                th:disabled="${#lists.isEmpty(availableProperties)}">
+                            <option value="">-- Choose an available asset in stock --</option>
+                            <option th:each="p : ${availableProperties}"
+                                    th:value="${p.propertyId}"
+                                    th:text="${p.propertyCode + ' — S/N: ' + (p.serialNumber != null ? p.serialNumber : 'None') + ' (Current Location: ' + p.area.name + ')'}">
+                            </option>
+                        </select>
+                        <small class="secondary-text" th:if="${!#lists.isEmpty(availableProperties)}">
+                            Only available properties in good condition matching the requested type are listed.
+                        </small>
+                        <p th:if="${#lists.isEmpty(availableProperties)}" style="color: #b42318; margin-top: 6px; font-weight: 600;">
+                            &times; No available physical assets of this type are currently in inventory. You must register or return an asset first.
+                        </p>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="areaId">Handover / Destination Physical Area *</label>
+                        <select id="areaId" name="areaId" class="form-control" required>
+                            <option value="">-- Select handover location --</option>
+                            <option th:each="a : ${areas}"
+                                    th:value="${a.areaId}"
+                                    th:text="${a.name}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="conditionAtIssue">Condition at Handover</label>
+                        <select id="conditionAtIssue" name="conditionAtIssue" class="form-control">
+                            <option value="GOOD" selected>Good</option>
+                            <option value="DAMAGED">Damaged</option>
+                            <option value="BROKEN">Broken</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="notes">Handover / Assignment Notes (Optional)</label>
+                        <textarea id="notes" name="notes" class="form-control" rows="3" maxlength="500"
+                                  placeholder="Handover notes, accessories provided, serial verification..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 24px; display: flex; gap: 12px; align-items: center;">
+                    <button class="primary-button" type="submit"
+                            th:disabled="${#lists.isEmpty(availableProperties)}"
+                            style="background: #16a34a;">
+                        &check; Fulfill &amp; Issue Asset
+                    </button>
+
+                    <a class="back-link" th:href="@{/requests/{id}(id=${request.requestId})}">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

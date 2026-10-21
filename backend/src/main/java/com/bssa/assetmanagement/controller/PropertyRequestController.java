@@ -1,8 +1,11 @@
 package com.bssa.assetmanagement.controller;
 
 import com.bssa.assetmanagement.entity.AppUser;
+import com.bssa.assetmanagement.entity.Property;
 import com.bssa.assetmanagement.entity.PropertyRequest;
 import com.bssa.assetmanagement.repository.AppUserRepository;
+import com.bssa.assetmanagement.repository.PhysicalAreaRepository;
+import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyTypeRepository;
 import com.bssa.assetmanagement.service.PropertyRequestService;
 import org.springframework.security.access.AccessDeniedException;
@@ -26,14 +29,20 @@ public class PropertyRequestController {
     private final PropertyRequestService requestService;
     private final PropertyTypeRepository propertyTypeRepository;
     private final AppUserRepository appUserRepository;
+    private final PropertyRepository propertyRepository;
+    private final PhysicalAreaRepository physicalAreaRepository;
 
     public PropertyRequestController(
             PropertyRequestService requestService,
             PropertyTypeRepository propertyTypeRepository,
-            AppUserRepository appUserRepository) {
+            AppUserRepository appUserRepository,
+            PropertyRepository propertyRepository,
+            PhysicalAreaRepository physicalAreaRepository) {
         this.requestService = requestService;
         this.propertyTypeRepository = propertyTypeRepository;
         this.appUserRepository = appUserRepository;
+        this.propertyRepository = propertyRepository;
+        this.physicalAreaRepository = physicalAreaRepository;
     }
 
     @GetMapping
@@ -52,6 +61,8 @@ public class PropertyRequestController {
         model.addAttribute("hasReviewPrivilege", hasReviewPrivilege);
 
         if (hasReviewPrivilege) {
+            model.addAttribute("pendingRequests", requestService.getPendingRequests());
+            model.addAttribute("pendingCount", requestService.countPendingRequests());
             model.addAttribute("allRequests", requestService.getAllRequests());
         }
 
@@ -135,8 +146,12 @@ public class PropertyRequestController {
                     hasReviewPrivilege
             );
 
+            boolean isOwner = request.getRequester().getEmail().equalsIgnoreCase(authentication.getName());
+            boolean isSelfRequest = isOwner;
+
             model.addAttribute("request", request);
-            model.addAttribute("isOwner", request.getRequester().getEmail().equalsIgnoreCase(authentication.getName()));
+            model.addAttribute("isOwner", isOwner);
+            model.addAttribute("isSelfRequest", isSelfRequest);
             model.addAttribute("hasReviewPrivilege", hasReviewPrivilege);
 
             return "requests/view";
@@ -304,11 +319,117 @@ public class PropertyRequestController {
                     "Request " + status.toLowerCase() + " successfully."
             );
 
-        } catch (IllegalStateException | IllegalArgumentException ex) {
+        } catch (AccessDeniedException | IllegalStateException | IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
 
         return "redirect:/requests/" + id;
+    }
+
+    @GetMapping("/{id}/fulfill")
+    public String showFulfillForm(
+            @PathVariable Long id,
+            Model model,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        if (!isCallerActive(authentication)) {
+            return "redirect:/login?logout";
+        }
+
+        if (!hasReviewRole(authentication)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "You are not authorized to fulfill asset requests."
+            );
+            return "redirect:/requests";
+        }
+
+        try {
+            PropertyRequest request = requestService.getRequestForUser(
+                    id,
+                    authentication.getName(),
+                    true
+            );
+
+            if (!"APPROVED".equals(request.getStatus())) {
+                redirectAttributes.addFlashAttribute(
+                        "errorMessage",
+                        "Only approved requests can be fulfilled. Current status is " + request.getStatus() + "."
+                );
+                return "redirect:/requests/" + id;
+            }
+
+            Long propertyTypeId = !request.getItems().isEmpty()
+                    ? request.getItems().get(0).getPropertyType().getPropertyTypeId()
+                    : null;
+
+            List<Property> availableProperties = propertyTypeId != null
+                    ? propertyRepository.findByPropertyType_PropertyTypeIdAndStatusAndConditionOrderByPropertyCodeAsc(
+                            propertyTypeId, "AVAILABLE", "GOOD")
+                    : List.of();
+
+            model.addAttribute("request", request);
+            model.addAttribute("availableProperties", availableProperties);
+            model.addAttribute("areas", physicalAreaRepository.findAllByActiveTrueOrderByNameAsc());
+
+            return "requests/fulfill";
+
+        } catch (AccessDeniedException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/requests";
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Request not found.");
+            return "redirect:/requests";
+        }
+    }
+
+    @PostMapping("/{id}/fulfill")
+    public String fulfillRequest(
+            @PathVariable Long id,
+            @RequestParam Long propertyId,
+            @RequestParam Long areaId,
+            @RequestParam(required = false, defaultValue = "GOOD") String conditionAtIssue,
+            @RequestParam(required = false) String notes,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        if (!isCallerActive(authentication)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Your account has been deactivated."
+            );
+            return "redirect:/login?logout";
+        }
+
+        if (!hasReviewRole(authentication)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "You are not authorized to fulfill asset requests."
+            );
+            return "redirect:/requests";
+        }
+
+        try {
+            requestService.fulfillRequest(
+                    id,
+                    propertyId,
+                    areaId,
+                    conditionAtIssue,
+                    notes,
+                    authentication.getName()
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Asset request fulfilled successfully and property assigned."
+            );
+            return "redirect:/requests/" + id;
+
+        } catch (AccessDeniedException | IllegalStateException | IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/requests/" + id + "/fulfill";
+        }
     }
 
     private boolean hasReviewRole(Authentication authentication) {

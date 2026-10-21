@@ -31,4 +31,7 @@ public interface PropertyAssignmentRepository
     );
 
     boolean existsByProperty_PropertyId(Long propertyId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(a) > 0 FROM PropertyAssignment a WHERE a.property.propertyId = :propertyId AND NOT EXISTS (SELECT r FROM PropertyReturn r WHERE r.assignment.assignmentId = a.assignmentId)")
+    boolean hasActiveAssignment(@org.springframework.data.repository.query.Param("propertyId") Long propertyId);
 }
