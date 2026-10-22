@@ -168,4 +168,17 @@ class SecurityAuthorizationTest {
         mockMvc.perform(get("/returns"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void unauthenticatedUserShouldBeRedirectedFromNotifications() throws Exception {
+        mockMvc.perform(get("/notifications"))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    @WithMockUser(username = "staff@example.com", roles = {"OFFICE_STAFF"})
+    void officeStaffCanAccessNotifications() throws Exception {
+        mockMvc.perform(get("/notifications"))
+                .andExpect(status().isOk());
+    }
 }

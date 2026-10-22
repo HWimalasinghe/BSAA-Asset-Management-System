@@ -98,6 +98,14 @@ public class SecurityConfig {
                         "OFFICE_STAFF"
                     )
 
+                .requestMatchers("/notifications", "/notifications/**")
+                    .hasAnyRole(
+                        "SYSTEM_ADMIN",
+                        "INVENTORY_ADMIN",
+                        "INVENTORY_MANAGER",
+                        "OFFICE_STAFF"
+                    )
+
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

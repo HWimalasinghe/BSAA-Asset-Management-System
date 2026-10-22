@@ -11,6 +11,7 @@ import com.bssa.assetmanagement.repository.PhysicalAreaRepository;
 import com.bssa.assetmanagement.repository.PropertyIncidentRepository;
 import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ public class PropertyIncidentService {
     private final AppUserRepository appUserRepository;
     private final PropertyStatusHistoryRepository statusHistoryRepository;
     private final PhysicalAreaRepository physicalAreaRepository;
+    private final NotificationService notificationService;
 
     public PropertyIncidentService(
             PropertyIncidentRepository incidentRepository,
@@ -37,11 +39,24 @@ public class PropertyIncidentService {
             AppUserRepository appUserRepository,
             PropertyStatusHistoryRepository statusHistoryRepository,
             PhysicalAreaRepository physicalAreaRepository) {
+        this(incidentRepository, propertyRepository, appUserRepository, statusHistoryRepository,
+                physicalAreaRepository, null);
+    }
+
+    @Autowired
+    public PropertyIncidentService(
+            PropertyIncidentRepository incidentRepository,
+            PropertyRepository propertyRepository,
+            AppUserRepository appUserRepository,
+            PropertyStatusHistoryRepository statusHistoryRepository,
+            PhysicalAreaRepository physicalAreaRepository,
+            NotificationService notificationService) {
         this.incidentRepository = incidentRepository;
         this.propertyRepository = propertyRepository;
         this.appUserRepository = appUserRepository;
         this.statusHistoryRepository = statusHistoryRepository;
         this.physicalAreaRepository = physicalAreaRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -127,7 +142,29 @@ public class PropertyIncidentService {
                 + (trimmedDesc.length() > 200 ? trimmedDesc.substring(0, 197) + "..." : trimmedDesc));
         statusHistoryRepository.save(history);
 
-        return incidentRepository.save(incident);
+        PropertyIncident saved = incidentRepository.save(incident);
+
+        if (notificationService != null) {
+            notificationService.notifyInventoryManagers(
+                    "New " + normalizedType + " Incident Reported",
+                    "A " + normalizedType + " incident was reported for property " + property.getPropertyCode()
+                            + " by " + reporter.getFirstName() + " " + reporter.getLastName() + ".",
+                    "INCIDENT_REPORTED",
+                    "INCIDENT",
+                    saved.getIncidentId(),
+                    null
+            );
+
+            long remainingAvailable = propertyRepository.countByPropertyType_PropertyTypeIdAndStatusAndCondition(
+                    property.getPropertyType().getPropertyTypeId(), "AVAILABLE", "GOOD");
+            notificationService.checkLowStockAndNotify(
+                    property.getPropertyType().getPropertyTypeId(),
+                    property.getPropertyType().getName(),
+                    remainingAvailable
+            );
+        }
+
+        return saved;
     }
 
     @Transactional
@@ -233,7 +270,22 @@ public class PropertyIncidentService {
             // It remains in its designated condition/status until an explicit return-to-service sign-off occurs.
         }
 
-        return incidentRepository.save(incident);
+        PropertyIncident saved = incidentRepository.save(incident);
+
+        if (notificationService != null) {
+            notificationService.createNotification(
+                    incident.getReportedBy(),
+                    "Incident for " + property.getPropertyCode() + " " + newStatus,
+                    "The " + incident.getIncidentType() + " incident report for property "
+                            + property.getPropertyCode() + " has been " + newStatus.toLowerCase()
+                            + ". Decision: " + incident.getDecision(),
+                    "INCIDENT_" + newStatus,
+                    "INCIDENT",
+                    saved.getIncidentId()
+            );
+        }
+
+        return saved;
     }
 
     @Transactional

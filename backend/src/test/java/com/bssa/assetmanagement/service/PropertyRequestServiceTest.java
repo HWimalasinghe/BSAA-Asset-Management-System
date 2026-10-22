@@ -40,6 +40,7 @@ class PropertyRequestServiceTest {
     private final PhysicalAreaRepository physicalAreaRepository = mock(PhysicalAreaRepository.class);
     private final PropertyAssignmentRepository assignmentRepository = mock(PropertyAssignmentRepository.class);
     private final PropertyStatusHistoryRepository statusHistoryRepository = mock(PropertyStatusHistoryRepository.class);
+    private final NotificationService notificationService = mock(NotificationService.class);
 
     private final PropertyRequestService service = new PropertyRequestService(
             requestRepository,
@@ -48,7 +49,8 @@ class PropertyRequestServiceTest {
             propertyRepository,
             physicalAreaRepository,
             assignmentRepository,
-            statusHistoryRepository
+            statusHistoryRepository,
+            notificationService
     );
 
     private AppUser requesterStaff;
@@ -566,5 +568,63 @@ class PropertyRequestServiceTest {
 
         assertEquals(1, service.getPendingRequests().size());
         assertEquals(1L, service.countPendingRequests());
+    }
+
+    @Test
+    void createRequest_shouldTriggerManagerNotification() {
+        when(requestRepository.save(any(PropertyRequest.class))).thenAnswer(invocation -> {
+            PropertyRequest req = invocation.getArgument(0);
+            req.setRequestId(101L);
+            return req;
+        });
+
+        PropertyRequest created = service.createRequest(
+                "staff@example.com",
+                activePropertyType.getPropertyTypeId(),
+                1,
+                "Need laptop",
+                "urgent"
+        );
+
+        assertNotNull(created);
+        verify(notificationService).notifyInventoryManagers(
+                eq("New Asset Request REQ-101"),
+                contains("submitted by Staff User requires review"),
+                eq("REQUEST_CREATED"),
+                eq("REQUEST"),
+                eq(101L),
+                eq(requesterStaff)
+        );
+    }
+
+    @Test
+    void createRequest_whenValidationFails_shouldNotTriggerNotification() {
+        assertThrows(IllegalArgumentException.class, () ->
+                service.createRequest("staff@example.com", null, 1, "Notes", null)
+        );
+
+        verify(notificationService, never()).notifyInventoryManagers(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void reviewRequest_approved_shouldNotifyRequester() {
+        PropertyRequest request = new PropertyRequest();
+        request.setRequestId(77L);
+        request.setStatus("PENDING");
+        request.setRequester(requesterStaff);
+
+        when(requestRepository.findById(77L)).thenReturn(Optional.of(request));
+        when(requestRepository.save(any(PropertyRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.reviewRequest(77L, "manager1@example.com", "APPROVED", null);
+
+        verify(notificationService).createNotification(
+                eq(requesterStaff),
+                eq("Request REQ-77 Approved"),
+                contains("has been approved"),
+                eq("REQUEST_APPROVED"),
+                eq("REQUEST"),
+                eq(77L)
+        );
     }
 }

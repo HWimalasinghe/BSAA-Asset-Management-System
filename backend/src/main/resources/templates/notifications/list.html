@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | BSAA Asset Management</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/properties.css}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <a class="action-button" th:href="@{/}">Dashboard</a>
+            <form th:action="@{/logout}" method="post">
+                <button class="logout-button" type="submit">Sign out</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">COMMUNICATIONS &amp; ALERTS</p>
+            <h1>Notifications</h1>
+            <p>Review workflow updates, approvals, request decisions, and system alerts.</p>
+        </section>
+
+        <section class="property-panel">
+            <p class="feedback-message success-message"
+               th:if="${successMessage != null}"
+               th:text="${successMessage}"></p>
+
+            <p class="feedback-message error-message"
+               th:if="${errorMessage != null}"
+               th:text="${errorMessage}"></p>
+
+            <div class="section-heading">
+                <div>
+                    <h2>
+                        My Notifications
+                        <span th:if="${unreadCount != null and unreadCount > 0}"
+                              style="display: inline-block; background: #e02424; color: #ffffff; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: 8px;"
+                              th:text="${unreadCount + ' unread'}"></span>
+                    </h2>
+                    <p>Track updates regarding your asset requests, incident reports, and issued equipment.</p>
+                </div>
+
+                <div class="property-actions" style="display: flex; gap: 10px; align-items: center;">
+                    <form th:if="${unreadCount != null and unreadCount > 0}" th:action="@{/notifications/read-all}" method="post" style="display: inline;">
+                        <button type="submit" class="action-button">Mark All as Read</button>
+                    </form>
+
+                    <a class="back-link" th:href="@{/}">Back to Dashboard</a>
+                </div>
+            </div>
+
+            <!-- Filter tabs -->
+            <div style="margin-bottom: 20px; display: flex; gap: 8px;">
+                <a th:href="@{/notifications(filter='all')}"
+                   th:style="${currentFilter != 'unread' ? 'padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; background: #173b72; color: #ffffff;' : 'padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; background: #e4e9f2; color: #172033;'}">
+                    All Notifications
+                </a>
+                <a th:href="@{/notifications(filter='unread')}"
+                   th:style="${currentFilter == 'unread' ? 'padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; background: #173b72; color: #ffffff;' : 'padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; background: #e4e9f2; color: #172033;'}">
+                    Unread Only
+                    <span th:if="${unreadCount != null and unreadCount > 0}" th:text="'(' + ${unreadCount} + ')'"></span>
+                </a>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="property-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">Status</th>
+                            <th>Type</th>
+                            <th>Title</th>
+                            <th>Message</th>
+                            <th>Received At</th>
+                            <th style="width: 120px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="n : ${notifications}"
+                            th:style="${!n.read ? 'background-color: #f8fbff; font-weight: 500;' : ''}">
+                            <td>
+                                <span th:if="${!n.read}"
+                                      style="display: inline-block; width: 10px; height: 10px; background-color: #1a56db; border-radius: 50%;"
+                                      title="Unread"></span>
+                                <span th:if="${n.read}"
+                                      style="color: #6b7280; font-size: 12px;">Read</span>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; background: #e5edff; color: #1e429f; font-weight: 600;"
+                                      th:text="${n.notificationType}"></span>
+                            </td>
+                            <td>
+                                <strong th:text="${n.title}"></strong>
+                            </td>
+                            <td>
+                                <span th:text="${n.message}"></span>
+                            </td>
+                            <td>
+                                <span th:if="${n.createdAt != null}"
+                                      th:text="${#temporals.format(n.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+                                <span th:if="${n.createdAt == null}">-</span>
+                            </td>
+                            <td>
+                                <form th:if="${!n.read}" th:action="@{/notifications/{id}/read(id=${n.notificationId})}" method="post">
+                                    <button type="submit" class="action-button" style="padding: 4px 10px; font-size: 12px;">Mark Read</button>
+                                </form>
+                                <span th:if="${n.read}" style="color: #9ca3af; font-size: 12px;">&mdash;</span>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(notifications)}">
+                            <td colspan="6" class="empty-state" style="padding: 30px; text-align: center; color: #6b7280;">
+                                No notifications found.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

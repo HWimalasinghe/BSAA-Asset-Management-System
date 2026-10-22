@@ -16,6 +16,7 @@ import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyRequestRepository;
 import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
 import com.bssa.assetmanagement.repository.PropertyTypeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,7 @@ public class PropertyRequestService {
     private final PhysicalAreaRepository physicalAreaRepository;
     private final PropertyAssignmentRepository assignmentRepository;
     private final PropertyStatusHistoryRepository statusHistoryRepository;
+    private final NotificationService notificationService;
 
     public PropertyRequestService(
             PropertyRequestRepository requestRepository,
@@ -47,6 +49,20 @@ public class PropertyRequestService {
             PhysicalAreaRepository physicalAreaRepository,
             PropertyAssignmentRepository assignmentRepository,
             PropertyStatusHistoryRepository statusHistoryRepository) {
+        this(requestRepository, propertyTypeRepository, appUserRepository, propertyRepository,
+                physicalAreaRepository, assignmentRepository, statusHistoryRepository, null);
+    }
+
+    @Autowired
+    public PropertyRequestService(
+            PropertyRequestRepository requestRepository,
+            PropertyTypeRepository propertyTypeRepository,
+            AppUserRepository appUserRepository,
+            PropertyRepository propertyRepository,
+            PhysicalAreaRepository physicalAreaRepository,
+            PropertyAssignmentRepository assignmentRepository,
+            PropertyStatusHistoryRepository statusHistoryRepository,
+            NotificationService notificationService) {
         this.requestRepository = requestRepository;
         this.propertyTypeRepository = propertyTypeRepository;
         this.appUserRepository = appUserRepository;
@@ -54,6 +70,7 @@ public class PropertyRequestService {
         this.physicalAreaRepository = physicalAreaRepository;
         this.assignmentRepository = assignmentRepository;
         this.statusHistoryRepository = statusHistoryRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -105,7 +122,21 @@ public class PropertyRequestService {
 
         request.addItem(item);
 
-        return requestRepository.save(request);
+        PropertyRequest saved = requestRepository.save(request);
+
+        if (notificationService != null) {
+            notificationService.notifyInventoryManagers(
+                    "New Asset Request REQ-" + saved.getRequestId(),
+                    "New asset request REQ-" + saved.getRequestId() + " submitted by "
+                            + requester.getFirstName() + " " + requester.getLastName() + " requires review.",
+                    "REQUEST_CREATED",
+                    "REQUEST",
+                    saved.getRequestId(),
+                    requester
+            );
+        }
+
+        return saved;
     }
 
     @Transactional
@@ -122,7 +153,21 @@ public class PropertyRequestService {
         }
 
         request.setStatus("CANCELLED");
-        return requestRepository.save(request);
+        PropertyRequest saved = requestRepository.save(request);
+
+        if (notificationService != null) {
+            notificationService.notifyInventoryManagers(
+                    "Request REQ-" + saved.getRequestId() + " Cancelled",
+                    "Asset request REQ-" + saved.getRequestId() + " has been cancelled by "
+                            + request.getRequester().getFirstName() + " " + request.getRequester().getLastName() + ".",
+                    "REQUEST_CANCELLED",
+                    "REQUEST",
+                    saved.getRequestId(),
+                    null
+            );
+        }
+
+        return saved;
     }
 
     @Transactional
@@ -238,7 +283,31 @@ public class PropertyRequestService {
             request.setRejectionReason(null);
         }
 
-        return requestRepository.save(request);
+        PropertyRequest saved = requestRepository.save(request);
+
+        if (notificationService != null) {
+            if ("APPROVED".equals(newStatus)) {
+                notificationService.createNotification(
+                        saved.getRequester(),
+                        "Request REQ-" + saved.getRequestId() + " Approved",
+                        "Your request REQ-" + saved.getRequestId() + " has been approved.",
+                        "REQUEST_APPROVED",
+                        "REQUEST",
+                        saved.getRequestId()
+                );
+            } else if ("REJECTED".equals(newStatus)) {
+                notificationService.createNotification(
+                        saved.getRequester(),
+                        "Request REQ-" + saved.getRequestId() + " Rejected",
+                        "Your request REQ-" + saved.getRequestId() + " was rejected. Reason: " + saved.getRejectionReason(),
+                        "REQUEST_REJECTED",
+                        "REQUEST",
+                        saved.getRequestId()
+                );
+            }
+        }
+
+        return saved;
     }
 
     @Transactional
@@ -362,6 +431,25 @@ public class PropertyRequestService {
 
         request.setStatus("FULFILLED");
         requestRepository.save(request);
+
+        if (notificationService != null) {
+            notificationService.createNotification(
+                    request.getRequester(),
+                    "Request REQ-" + request.getRequestId() + " Fulfilled",
+                    "Your request REQ-" + request.getRequestId() + " has been fulfilled with "
+                            + assignments.size() + " allocated item(s).",
+                    "REQUEST_FULFILLED",
+                    "REQUEST",
+                    request.getRequestId()
+            );
+
+            if (requestedType != null) {
+                long remainingAvailable = propertyRepository.countByPropertyType_PropertyTypeIdAndStatusAndCondition(
+                        requestedType.getPropertyTypeId(), "AVAILABLE", "GOOD");
+                notificationService.checkLowStockAndNotify(
+                        requestedType.getPropertyTypeId(), requestedType.getName(), remainingAvailable);
+            }
+        }
 
         return assignments;
     }

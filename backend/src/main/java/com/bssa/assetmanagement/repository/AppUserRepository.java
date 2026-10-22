@@ -15,4 +15,6 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     boolean existsByEmployeeCodeIgnoreCase(String employeeCode);
 
     boolean existsByEmailIgnoreCase(String email);
+
+    List<AppUser> findByActiveTrueAndRoles_Name(String roleName);
 }

@@ -16,9 +16,14 @@
             </span>
         </a>
 
-        <form th:action="@{/logout}" method="post">
-            <button class="logout-button" type="submit">Sign out</button>
-        </form>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <a class="action-button" th:href="@{/notifications}">
+                Notifications
+            </a>
+            <form th:action="@{/logout}" method="post">
+                <button class="logout-button" type="submit">Sign out</button>
+            </form>
+        </div>
     </header>
 
     <main class="page-content">
@@ -154,6 +159,16 @@
 
                 <a class="department-link" th:href="@{/property-types}">
                     Manage Property Types &rarr;
+                </a>
+            </article>
+
+            <article class="summary-card">
+                <span class="card-number">10</span>
+                <h2>Notifications</h2>
+                <p>View workflow updates, request decisions, and system alerts.</p>
+
+                <a class="department-link" th:href="@{/notifications}">
+                    View Notifications &rarr;
                 </a>
             </article>
         </section>

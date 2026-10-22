@@ -14,6 +14,7 @@ import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyReturnRepository;
 import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,6 +26,7 @@ public class PropertyReturnService {
     private final AppUserRepository appUserRepository;
     private final PropertyStatusHistoryRepository statusHistoryRepository;
     private final PropertyIncidentRepository incidentRepository;
+    private final NotificationService notificationService;
 
     public PropertyReturnService(
             PropertyAssignmentRepository assignmentRepository,
@@ -33,12 +35,26 @@ public class PropertyReturnService {
             AppUserRepository appUserRepository,
             PropertyStatusHistoryRepository statusHistoryRepository,
             PropertyIncidentRepository incidentRepository) {
+        this(assignmentRepository, returnRepository, propertyRepository, appUserRepository,
+                statusHistoryRepository, incidentRepository, null);
+    }
+
+    @Autowired
+    public PropertyReturnService(
+            PropertyAssignmentRepository assignmentRepository,
+            PropertyReturnRepository returnRepository,
+            PropertyRepository propertyRepository,
+            AppUserRepository appUserRepository,
+            PropertyStatusHistoryRepository statusHistoryRepository,
+            PropertyIncidentRepository incidentRepository,
+            NotificationService notificationService) {
         this.assignmentRepository = assignmentRepository;
         this.returnRepository = returnRepository;
         this.propertyRepository = propertyRepository;
         this.appUserRepository = appUserRepository;
         this.statusHistoryRepository = statusHistoryRepository;
         this.incidentRepository = incidentRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -150,10 +166,37 @@ public class PropertyReturnService {
             incident.setIncidentType(incidentType);
             incident.setDescription(incidentDescription);
             incident.setStatus("OPEN");
-            incidentRepository.save(incident);
+            PropertyIncident savedIncident = incidentRepository.save(incident);
+
+            if (notificationService != null) {
+                notificationService.notifyInventoryManagers(
+                        "Damaged Asset Returned: " + property.getPropertyCode(),
+                        "Property " + property.getPropertyCode() + " was returned in " + condition
+                                + " condition by " + assignment.getEmployee().getFirstName() + " "
+                                + assignment.getEmployee().getLastName() + ". An incident report has been opened.",
+                        "INCIDENT_REPORTED",
+                        "INCIDENT",
+                        savedIncident.getIncidentId(),
+                        null
+                );
+            }
         }
 
-        return returnRepository.save(propertyReturn);
+        PropertyReturn savedReturn = returnRepository.save(propertyReturn);
+
+        if (notificationService != null) {
+            notificationService.createNotification(
+                    assignment.getEmployee(),
+                    "Asset " + property.getPropertyCode() + " Return Recorded",
+                    "Your return for asset " + property.getPropertyCode()
+                            + " has been recorded with condition " + condition + ".",
+                    "ASSET_RETURNED",
+                    "RETURN",
+                    savedReturn.getReturnId()
+            );
+        }
+
+        return savedReturn;
     }
 
     /**

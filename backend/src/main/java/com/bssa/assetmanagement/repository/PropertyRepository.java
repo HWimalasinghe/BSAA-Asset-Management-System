@@ -23,4 +23,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
     @EntityGraph(attributePaths = {"propertyType", "area"})
     List<Property> findByPropertyType_PropertyTypeIdAndStatusAndConditionOrderByPropertyCodeAsc(
             Long propertyTypeId, String status, String condition);
+
+    long countByPropertyType_PropertyTypeIdAndStatusAndCondition(
+            Long propertyTypeId, String status, String condition);
 }

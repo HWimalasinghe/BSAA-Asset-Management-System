@@ -10,6 +10,7 @@ import com.bssa.assetmanagement.repository.PhysicalAreaRepository;
 import com.bssa.assetmanagement.repository.PropertyAssignmentRepository;
 import com.bssa.assetmanagement.repository.PropertyRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.bssa.assetmanagement.entity.PropertyStatusHistory;
 import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
@@ -22,6 +23,7 @@ public class PropertyAssignmentService {
     private final PhysicalAreaRepository physicalAreaRepository;
     private final PropertyAssignmentRepository assignmentRepository;
     private final PropertyStatusHistoryRepository statusHistoryRepository;
+    private final NotificationService notificationService;
 
     public PropertyAssignmentService(
             PropertyRepository propertyRepository,
@@ -29,11 +31,24 @@ public class PropertyAssignmentService {
             PhysicalAreaRepository physicalAreaRepository,
             PropertyAssignmentRepository assignmentRepository,
             PropertyStatusHistoryRepository statusHistoryRepository) {
+        this(propertyRepository, appUserRepository, physicalAreaRepository, assignmentRepository,
+                statusHistoryRepository, null);
+    }
+
+    @Autowired
+    public PropertyAssignmentService(
+            PropertyRepository propertyRepository,
+            AppUserRepository appUserRepository,
+            PhysicalAreaRepository physicalAreaRepository,
+            PropertyAssignmentRepository assignmentRepository,
+            PropertyStatusHistoryRepository statusHistoryRepository,
+            NotificationService notificationService) {
         this.propertyRepository = propertyRepository;
         this.appUserRepository = appUserRepository;
         this.physicalAreaRepository = physicalAreaRepository;
         this.assignmentRepository = assignmentRepository;
         this.statusHistoryRepository = statusHistoryRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -117,8 +132,28 @@ public class PropertyAssignmentService {
 
         statusHistoryRepository.save(history);
 
-        assignmentRepository.save(assignment);
+        PropertyAssignment saved = assignmentRepository.save(assignment);
 
-        return assignment;
+        if (notificationService != null) {
+            notificationService.createNotification(
+                    employee,
+                    "Asset " + property.getPropertyCode() + " Assigned",
+                    "Asset " + property.getPropertyCode() + " (" + property.getPropertyType().getName()
+                            + ") has been assigned to you at area " + area.getName() + ".",
+                    "ASSET_ASSIGNED",
+                    "ASSIGNMENT",
+                    saved.getAssignmentId()
+            );
+
+            long remainingAvailable = propertyRepository.countByPropertyType_PropertyTypeIdAndStatusAndCondition(
+                    property.getPropertyType().getPropertyTypeId(), "AVAILABLE", "GOOD");
+            notificationService.checkLowStockAndNotify(
+                    property.getPropertyType().getPropertyTypeId(),
+                    property.getPropertyType().getName(),
+                    remainingAvailable
+            );
+        }
+
+        return saved;
     }
 }
