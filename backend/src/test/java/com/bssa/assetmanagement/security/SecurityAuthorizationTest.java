@@ -115,6 +115,9 @@ class SecurityAuthorizationTest {
 
         mockMvc.perform(get("/assignments"))
                 .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/returns"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -150,6 +153,19 @@ class SecurityAuthorizationTest {
     @WithMockUser(username = "staff@example.com", roles = {"OFFICE_STAFF"})
     void officeStaffCanAccessIncidents() throws Exception {
         mockMvc.perform(get("/incidents"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void unauthenticatedUserShouldBeRedirectedFromReturns() throws Exception {
+        mockMvc.perform(get("/returns"))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    @WithMockUser(username = "manager@example.com", roles = {"INVENTORY_MANAGER"})
+    void inventoryManagerCanAccessReturns() throws Exception {
+        mockMvc.perform(get("/returns"))
                 .andExpect(status().isOk());
     }
 }

@@ -40,7 +40,7 @@
                 style="color: #b42318;"></p>
 
                 <div style="margin-bottom: 24px;">
-                    <a class="action-button" th:href="@{/returns/new}">
+                    <a th:if="${hasReturnPrivilege}" class="action-button" th:href="@{/returns/new}">
                         + Record Return
                     </a>
 
