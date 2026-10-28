@@ -1,0 +1,148 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments Report | BSAA Asset Management</title>
+    <meta name="description" content="Asset assignment history filterable by employee, area, and active status.">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <a class="action-button" th:href="@{/reports/assets}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Asset Register</a>
+            <a class="action-button" th:href="@{/reports/summary}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Summary</a>
+            <a class="action-button" th:href="@{/reports/assignments}">Assignments</a>
+            <a class="action-button" th:href="@{/reports/requests}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Requests</a>
+            <a class="action-button" th:href="@{/reports/incidents}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Incidents</a>
+            <a class="action-button" th:href="@{/}">Dashboard</a>
+            <form th:action="@{/logout}" method="post">
+                <button class="logout-button" type="submit">Sign out</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">INVENTORY REPORTS</p>
+            <h1>Assignments Report</h1>
+            <p>Review all asset assignments to employees, filtered by person, location, or active status.</p>
+        </section>
+
+        <!-- Filters -->
+        <section class="account-panel" style="margin-bottom: 24px; flex-direction: column; align-items: flex-start; gap: 16px;">
+            <h2 style="margin: 0; font-size: 15px; color: #172d50;">Filter Assignments</h2>
+            <form id="assignment-filter-form" method="get" th:action="@{/reports/assignments}"
+                  style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-employee" style="font-size: 12px; font-weight: 600; color: #475467;">Employee</label>
+                    <select id="filter-employee" name="employeeId" style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; min-width: 200px; background: #fff;">
+                        <option value="" th:selected="${selectedEmployeeId == null}">All Employees</option>
+                        <option th:each="u : ${users}"
+                                th:value="${u.userId}"
+                                th:text="${u.employeeCode + ' — ' + u.firstName + ' ' + u.lastName}"
+                                th:selected="${selectedEmployeeId != null and selectedEmployeeId == u.userId}">Employee</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-area" style="font-size: 12px; font-weight: 600; color: #475467;">Physical Area</label>
+                    <select id="filter-area" name="areaId" style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; min-width: 160px; background: #fff;">
+                        <option value="" th:selected="${selectedAreaId == null}">All Areas</option>
+                        <option th:each="area : ${physicalAreas}"
+                                th:value="${area.areaId}"
+                                th:text="${area.name}"
+                                th:selected="${selectedAreaId != null and selectedAreaId == area.areaId}">Area</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-active" style="font-size: 12px; font-weight: 600; color: #475467;">Show Only</label>
+                    <select id="filter-active" name="activeOnly" style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; min-width: 160px; background: #fff;">
+                        <option value="false" th:selected="${!activeOnly}">All Assignments</option>
+                        <option value="true" th:selected="${activeOnly}">Outstanding (Not Returned)</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="submit" class="action-button" style="padding: 8px 18px; font-size: 13px;">Apply Filter</button>
+                    <a th:href="@{/reports/assignments}" class="action-button" style="padding: 8px 18px; font-size: 13px; background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Reset</a>
+                </div>
+            </form>
+        </section>
+
+        <!-- Results Table -->
+        <section style="background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden;">
+            <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f1; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 15px; color: #172d50;">
+                    <span th:text="${activeOnly} ? 'Outstanding Assignments' : 'Assignment Records'">Assignment Records</span>
+                    <span style="font-size: 13px; font-weight: 400; color: #68758a; margin-left: 8px;"
+                          th:text="'(' + ${#lists.size(assignments)} + ' records)'"></span>
+                </h2>
+                <a class="action-button" th:href="@{/returns}"
+                   style="font-size: 12px; padding: 6px 14px; background: transparent; border: 1px solid #c8d6e8; color: #172d50;">
+                    Process a Return &rarr;
+                </a>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f8fafd; text-align: left; color: #475467;">
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">#</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Asset</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Asset Holder</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Area</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Condition at Issue</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Issued At</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Issued By</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="a, rowStat : ${assignments}"
+                            th:style="${rowStat.even} ? 'border-bottom: 1px solid #f0f4fa; background: #ffffff;' : 'border-bottom: 1px solid #f0f4fa; background: #fafbfd;'">
+                            <td style="padding: 12px 16px; color: #68758a;" th:text="${a.assignmentId}"></td>
+                            <td style="padding: 12px 16px;">
+                                <strong th:text="${a.property.propertyCode}" style="color: #172d50;"></strong><br>
+                                <small style="color: #68758a;" th:text="${a.property.propertyType.name}"></small>
+                            </td>
+                            <td style="padding: 12px 16px;"
+                                th:text="${a.employee.firstName + ' ' + a.employee.lastName}"></td>
+                            <td style="padding: 12px 16px;" th:text="${a.area.name}"></td>
+                            <td style="padding: 12px 16px;">
+                                <span th:text="${a.conditionAtIssue}"
+                                      th:style="'font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 600; background:'
+                                             + ${#strings.equals(a.conditionAtIssue, 'GOOD') ? '#f0fdf4; color: #067647;' : '#fff7ed; color: #b54708;'}"></span>
+                            </td>
+                            <td style="padding: 12px 16px; color: #68758a;"
+                                th:text="${a.issuedAt != null ? #temporals.format(a.issuedAt, 'yyyy-MM-dd HH:mm') : '-'}"></td>
+                            <td style="padding: 12px 16px;"
+                                th:text="${a.issuedBy != null ? a.issuedBy.firstName + ' ' + a.issuedBy.lastName : '-'}"></td>
+                            <td style="padding: 12px 16px; color: #68758a;"
+                                th:text="${a.notes != null and !a.notes.isEmpty() ? a.notes : '-'}"></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(assignments)}">
+                            <td colspan="8" style="padding: 40px; text-align: center; color: #68758a;">
+                                <p style="margin: 0; font-size: 14px;"
+                                   th:text="${activeOnly} ? 'No outstanding assignments — every assignment has been returned.' : 'No assignments match the selected filters.'">
+                                    No assignments match the selected filters.</p>
+                                <a th:href="@{/reports/assignments}" style="color: #175cd3; font-size: 13px; margin-top: 8px; display: inline-block;">Clear filters</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer style="margin-top: 32px; text-align: center; color: #68758a; font-size: 12px; padding-bottom: 24px;">
+            BSAA Asset Management System
+        </footer>
+    </main>
+
+</body>
+</html>

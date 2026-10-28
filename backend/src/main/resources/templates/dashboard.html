@@ -17,6 +17,10 @@
         </a>
 
         <div style="display: flex; align-items: center; gap: 12px;">
+            <a th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN' or userRole == 'INVENTORY_MANAGER'}"
+               class="action-button" th:href="@{/reports}">
+                Reports
+            </a>
             <a class="action-button" th:href="@{/notifications}">
                 Notifications
             </a>
@@ -50,6 +54,147 @@
             </div>
         </section>
 
+        <!-- Manager & Admin Metrics Panel -->
+        <section th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN' or userRole == 'INVENTORY_MANAGER'}"
+                 style="margin-bottom: 32px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2 style="font-size: 18px; color: #172d50; margin: 0;">Inventory At A Glance</h2>
+                <a th:href="@{/reports/summary}" class="action-button" style="font-size: 12px; padding: 6px 14px; background: transparent; border: 1px solid #c8d6e8; color: #172d50;">
+                    Inventory Summary &rarr;
+                </a>
+                <a th:href="@{/reports}" class="action-button" style="font-size: 12px; padding: 6px 14px;">
+                    View Detailed Reports &rarr;
+                </a>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #68758a; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Total Assets</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #172d50; margin: 8px 0 0;" th:text="${totalAssets ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #067647; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Available</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #067647; margin: 8px 0 0;" th:text="${availableAssets ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #175cd3; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Assigned</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #175cd3; margin: 8px 0 0;" th:text="${assignedAssets ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #b54708; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Damaged / Repair</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #b54708; margin: 8px 0 0;" th:text="${damagedAssets ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #b42318; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Lost Assets</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #b42318; margin: 8px 0 0;" th:text="${lostAssets ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #475467; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Retired</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #475467; margin: 8px 0 0;" th:text="${retiredAssets ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #7a271a; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Pending Requests</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #7a271a; margin: 8px 0 0;" th:text="${pendingRequests ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #c4320a; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Open Incidents</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #c4320a; margin: 8px 0 0;" th:text="${openIncidents ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #854d0e; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Under Inspection</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #854d0e; margin: 8px 0 0;" th:text="${underInspectionAssets ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #b54708; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Outstanding Returns</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #b54708; margin: 8px 0 0;" th:text="${outstandingAssignments ?: 0}">0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Office Staff Personal Metrics -->
+        <section th:if="${userRole == 'OFFICE_STAFF'}" style="margin-bottom: 32px;">
+            <h2 style="font-size: 18px; color: #172d50; margin: 0 0 16px;">My Overview</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #175cd3; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">My Assigned Assets</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #175cd3; margin: 8px 0 0;" th:text="${myAssignedAssets ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #b54708; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">My Pending Requests</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #b54708; margin: 8px 0 0;" th:text="${myPendingRequests ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #c4320a; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">My Open Incidents</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #c4320a; margin: 8px 0 0;" th:text="${myOpenIncidents ?: 0}">0</p>
+                </div>
+
+                <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <small style="color: #475467; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Unread Notifications</small>
+                    <p style="font-size: 28px; font-weight: 700; color: #475467; margin: 8px 0 0;" th:text="${myUnreadNotifications ?: 0}">0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Inventory Activity -->
+        <section th:if="${userRole == 'SYSTEM_ADMIN' or userRole == 'INVENTORY_ADMIN' or userRole == 'INVENTORY_MANAGER'}"
+                 style="margin-bottom: 36px; background: #ffffff; padding: 24px; border-radius: 14px; border: 1px solid #e2e8f1; box-shadow: 0 6px 20px rgba(22, 39, 75, 0.035);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                <div>
+                    <h2 style="font-size: 18px; color: #172d50; margin: 0 0 4px;">Recent Inventory Activity</h2>
+                    <p style="color: #68758a; font-size: 13px; margin: 0;">Traceable audit history of asset status transitions.</p>
+                </div>
+                <a th:href="@{/reports/assets}" class="action-button" style="font-size: 12px; padding: 6px 14px;">
+                    Full Asset Register &rarr;
+                </a>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e4e9f2; text-align: left; color: #475467;">
+                            <th style="padding: 10px 12px;">Asset</th>
+                            <th style="padding: 10px 12px;">Transition</th>
+                            <th style="padding: 10px 12px;">Changed By</th>
+                            <th style="padding: 10px 12px;">Date &amp; Time</th>
+                            <th style="padding: 10px 12px;">Reason / Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="act : ${recentActivity}" style="border-bottom: 1px solid #f0f4fa;">
+                            <td style="padding: 10px 12px;">
+                                <strong th:text="${act.property.propertyCode}"></strong>
+                                <br>
+                                <small style="color: #68758a;" th:text="${act.property.propertyType.name}"></small>
+                            </td>
+                            <td style="padding: 10px 12px;">
+                                <span style="color: #68758a;" th:text="${act.oldStatus ?: 'NEW'}"></span>
+                                &rarr;
+                                <strong th:text="${act.newStatus}"></strong>
+                            </td>
+                            <td style="padding: 10px 12px;" th:text="${act.changedBy.firstName + ' ' + act.changedBy.lastName}"></td>
+                            <td style="padding: 10px 12px;" th:text="${#temporals.format(act.changedAt, 'yyyy-MM-dd HH:mm')}"></td>
+                            <td style="padding: 10px 12px; color: #475467;" th:text="${act.reason ?: '-'}"></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(recentActivity)}">
+                            <td colspan="5" style="padding: 24px; text-align: center; color: #68758a;">
+                                No recent inventory activity recorded yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
         <section class="summary-grid">
             <article class="summary-card"
@@ -136,7 +281,7 @@
                 </a>
             </article>
 
-                        <article class="summary-card"
+            <article class="summary-card"
                     th:if="${userRole == 'SYSTEM_ADMIN'
                         or userRole == 'INVENTORY_ADMIN'}">
 
@@ -169,6 +314,20 @@
 
                 <a class="department-link" th:href="@{/notifications}">
                     View Notifications &rarr;
+                </a>
+            </article>
+
+            <article class="summary-card"
+                    th:if="${userRole == 'SYSTEM_ADMIN'
+                        or userRole == 'INVENTORY_ADMIN'
+                        or userRole == 'INVENTORY_MANAGER'}">
+
+                <span class="card-number">11</span>
+                <h2>Inventory Reports</h2>
+                <p>Generate asset registers, category/area summaries, and audit histories.</p>
+
+                <a class="department-link" th:href="@{/reports}">
+                    View Reports &rarr;
                 </a>
             </article>
         </section>

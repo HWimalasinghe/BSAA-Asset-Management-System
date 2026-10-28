@@ -63,6 +63,13 @@ public class SecurityConfig {
                         "INVENTORY_MANAGER"
                     )
 
+                .requestMatchers("/reports", "/reports/**")
+                    .hasAnyRole(
+                        "SYSTEM_ADMIN",
+                        "INVENTORY_ADMIN",
+                        "INVENTORY_MANAGER"
+                    )
+
                 // Both administrator roles may access account management.
                 // UserManagementController enforces individual account permissions.
                 .requestMatchers("/users", "/users/**")

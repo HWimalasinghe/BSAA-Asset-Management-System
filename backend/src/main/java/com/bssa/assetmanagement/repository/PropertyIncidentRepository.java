@@ -26,4 +26,22 @@ public interface PropertyIncidentRepository extends JpaRepository<PropertyIncide
     boolean existsByProperty_PropertyIdAndStatus(Long propertyId, String status);
 
     long countByStatus(String status);
+
+    long countByReportedBy_UserIdAndStatus(Long reportedById, String status);
+
+    @EntityGraph(attributePaths = {"property", "property.propertyType", "property.area", "reportedBy", "reviewedBy"})
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT i FROM PropertyIncident i " +
+        "WHERE (:incidentType IS NULL OR i.incidentType = :incidentType) " +
+        "AND (:status IS NULL OR i.status = :status) " +
+        "AND (:startDate IS NULL OR i.createdAt >= :startDate) " +
+        "AND (:endDate IS NULL OR i.createdAt <= :endDate) " +
+        "ORDER BY i.incidentId DESC"
+    )
+    List<PropertyIncident> findFilteredIncidents(
+            @org.springframework.data.repository.query.Param("incidentType") String incidentType,
+            @org.springframework.data.repository.query.Param("status") String status,
+            @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
+            @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate
+    );
 }

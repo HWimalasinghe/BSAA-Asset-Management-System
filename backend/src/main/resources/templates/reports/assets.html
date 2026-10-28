@@ -1,0 +1,194 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Register Report | BSAA Asset Management</title>
+    <meta name="description" content="Full asset register with filters by status, category, type, and physical area.">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <a class="action-button" th:href="@{/reports/assets}">Asset Register</a>
+            <a class="action-button" th:href="@{/reports/summary}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Summary</a>
+            <a class="action-button" th:href="@{/reports/assignments}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Assignments</a>
+            <a class="action-button" th:href="@{/reports/requests}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Requests</a>
+            <a class="action-button" th:href="@{/reports/incidents}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Incidents</a>
+            <a class="action-button" th:href="@{/}">Dashboard</a>
+            <form th:action="@{/logout}" method="post">
+                <button class="logout-button" type="submit">Sign out</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">INVENTORY REPORTS</p>
+            <h1>Asset Register</h1>
+            <p>Browse all registered assets filtered by status, category, type, or physical area.</p>
+        </section>
+
+        <!-- Status Summary Bar: one grouped database query, clickable to filter -->
+        <section style="margin-bottom: 28px;">
+            <p th:if="${errorMessage != null}"
+               th:text="${errorMessage}"
+               style="margin: 0 0 16px; padding: 12px 16px; border-radius: 10px;
+                      background: #fff1f2; color: #b42318; border: 1px solid #fecdd3; font-size: 13px;"></p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+                <a th:each="entry : ${statusSummary}"
+                   th:href="@{/reports/assets(status=${entry.key})}"
+                   th:with="tint=${entry.key == 'AVAILABLE' ? '#f0fdf4'
+                                    : entry.key == 'ASSIGNED' ? '#eff6ff'
+                                    : entry.key == 'UNDER_INSPECTION' ? '#fefce8'
+                                    : entry.key == 'DAMAGED' ? '#fff7ed'
+                                    : entry.key == 'UNDER_REPAIR' ? '#fdf4ff'
+                                    : entry.key == 'LOST' ? '#fff1f2'
+                                    : '#f8fafc'},
+                            ink=${entry.key == 'AVAILABLE' ? '#067647'
+                                    : entry.key == 'ASSIGNED' ? '#175cd3'
+                                    : entry.key == 'UNDER_INSPECTION' ? '#854d0e'
+                                    : entry.key == 'DAMAGED' ? '#b54708'
+                                    : entry.key == 'UNDER_REPAIR' ? '#7c3aed'
+                                    : entry.key == 'LOST' ? '#b42318'
+                                    : '#475467'}"
+                   th:style="'display: block; background: ' + ${tint} + '; padding: 14px; border-radius: 10px; text-decoration: none; text-align: center; color: ' + ${ink}">
+                    <small th:text="${#strings.replace(#strings.toLowerCase(entry.key), '_', ' ')}"
+                           style="font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;"></small>
+                    <p style="font-size: 24px; font-weight: 700; margin: 6px 0 0;"
+                       th:text="${entry.value}">0</p>
+                    <span th:if="${selectedStatus != null and #strings.equals(selectedStatus, entry.key)}"
+                          style="font-size: 10px; font-weight: 700; text-transform: uppercase;">&#9679; shown</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Filters -->
+        <section class="account-panel" style="margin-bottom: 24px; flex-direction: column; align-items: flex-start; gap: 16px;">
+            <h2 style="margin: 0; font-size: 15px; color: #172d50;">Filter Assets</h2>
+            <form id="asset-filter-form" method="get" th:action="@{/reports/assets}"
+                  style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-status" style="font-size: 12px; font-weight: 600; color: #475467;">Status</label>
+                    <select id="filter-status" name="status" style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; min-width: 160px; background: #fff;">
+                        <option value="ALL" th:selected="${selectedStatus == null or selectedStatus == 'ALL'}">All Statuses</option>
+                        <option th:each="s : ${statusSummary}"
+                                th:value="${s.key}"
+                                th:text="${#strings.replace(#strings.toLowerCase(s.key), '_', ' ')}"
+                                th:selected="${selectedStatus != null and #strings.equals(selectedStatus, s.key)}">Status</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-category" style="font-size: 12px; font-weight: 600; color: #475467;">Category</label>
+                    <select id="filter-category" name="categoryId" style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; min-width: 160px; background: #fff;">
+                        <option value="" th:selected="${selectedCategoryId == null}">All Categories</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.categoryId}"
+                                th:text="${cat.name}"
+                                th:selected="${selectedCategoryId != null and selectedCategoryId == cat.categoryId}">Category</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-type" style="font-size: 12px; font-weight: 600; color: #475467;">Property Type</label>
+                    <select id="filter-type" name="propertyTypeId" style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; min-width: 160px; background: #fff;">
+                        <option value="" th:selected="${selectedTypeId == null}">All Types</option>
+                        <option th:each="pt : ${propertyTypes}"
+                                th:value="${pt.propertyTypeId}"
+                                th:text="${pt.category.name + ' — ' + pt.name}"
+                                th:selected="${selectedTypeId != null and selectedTypeId == pt.propertyTypeId}">Type</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-area" style="font-size: 12px; font-weight: 600; color: #475467;">Physical Area</label>
+                    <select id="filter-area" name="areaId" style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; min-width: 160px; background: #fff;">
+                        <option value="" th:selected="${selectedAreaId == null}">All Areas</option>
+                        <option th:each="area : ${physicalAreas}"
+                                th:value="${area.areaId}"
+                                th:text="${area.name}"
+                                th:selected="${selectedAreaId != null and selectedAreaId == area.areaId}">Area</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="submit" class="action-button" style="padding: 8px 18px; font-size: 13px;">Apply Filter</button>
+                    <a th:href="@{/reports/assets}" class="action-button" style="padding: 8px 18px; font-size: 13px; background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Reset</a>
+                </div>
+            </form>
+        </section>
+
+        <!-- Results Table -->
+        <section style="background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden;">
+            <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f1; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 15px; color: #172d50;">
+                    Asset List
+                    <span style="font-size: 13px; font-weight: 400; color: #68758a; margin-left: 8px;"
+                          th:text="'(' + ${#lists.size(properties)} + ' records)'"></span>
+                </h2>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f8fafd; text-align: left; color: #475467;">
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Asset Code</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Type</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Category</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Physical Area</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Serial No.</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Condition</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Status</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Purchase Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p, rowStat : ${properties}"
+                            th:style="${rowStat.even} ? 'border-bottom: 1px solid #f0f4fa; background: #ffffff;' : 'border-bottom: 1px solid #f0f4fa; background: #fafbfd;'">
+                            <td style="padding: 12px 16px; font-weight: 600; color: #172d50;" th:text="${p.propertyCode}"></td>
+                            <td style="padding: 12px 16px;" th:text="${p.propertyType.name}"></td>
+                            <td style="padding: 12px 16px; color: #68758a;" th:text="${p.propertyType.category.name}"></td>
+                            <td style="padding: 12px 16px;" th:text="${p.area.name}"></td>
+                            <td style="padding: 12px 16px; color: #68758a;" th:text="${p.serialNumber != null ? p.serialNumber : '-'}"></td>
+                            <td style="padding: 12px 16px;">
+                                <span th:text="${p.condition}"
+                                      style="font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 600;"
+                                      th:style="'font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 600; background:'
+                                             + ${#strings.equals(p.condition, 'GOOD') ? '#f0fdf4; color: #067647;' : '#fff1f2; color: #b42318;'}"></span>
+                            </td>
+                            <td style="padding: 12px 16px;">
+                                <span th:text="${p.status}"
+                                      th:style="'font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 600; background:'
+                                             + ${p.status == 'AVAILABLE' ? '#f0fdf4; color: #067647;'
+                                               : p.status == 'ASSIGNED' ? '#eff6ff; color: #175cd3;'
+                                               : (p.status == 'DAMAGED' or p.status == 'UNDER_REPAIR') ? '#fff7ed; color: #b54708;'
+                                               : p.status == 'LOST' ? '#fff1f2; color: #b42318;'
+                                               : p.status == 'RETIRED' ? '#f8fafc; color: #475467;'
+                                               : '#fefce8; color: #854d0e;'}"></span>
+                            </td>
+                            <td style="padding: 12px 16px; color: #68758a;"
+                                th:text="${p.purchaseDate != null ? #temporals.format(p.purchaseDate, 'yyyy-MM-dd') : '-'}"></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(properties)}">
+                            <td colspan="8" style="padding: 40px; text-align: center; color: #68758a;">
+                                <p style="margin: 0; font-size: 14px;">No assets match the selected filters.</p>
+                                <a th:href="@{/reports/assets}" style="color: #175cd3; font-size: 13px; margin-top: 8px; display: inline-block;">Clear filters to see all assets</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer style="margin-top: 32px; text-align: center; color: #68758a; font-size: 12px; padding-bottom: 24px;">
+            BSAA Asset Management System
+        </footer>
+    </main>
+
+</body>
+</html>

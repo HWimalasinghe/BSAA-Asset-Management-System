@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Damage &amp; Loss Incident Report | BSAA Asset Management</title>
+    <meta name="description" content="Damage, breakage, and loss incidents filterable by type, status, and date range.">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+
+    <header class="topbar">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-icon">B</span>
+            <span>
+                <strong>BSAA</strong>
+                <small>Asset Management</small>
+            </span>
+        </a>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <a class="action-button" th:href="@{/reports/assets}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Asset Register</a>
+            <a class="action-button" th:href="@{/reports/summary}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Summary</a>
+            <a class="action-button" th:href="@{/reports/assignments}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Assignments</a>
+            <a class="action-button" th:href="@{/reports/requests}" style="background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Requests</a>
+            <a class="action-button" th:href="@{/reports/incidents}">Incidents</a>
+            <a class="action-button" th:href="@{/}">Dashboard</a>
+            <form th:action="@{/logout}" method="post">
+                <button class="logout-button" type="submit">Sign out</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="page-content">
+        <section class="welcome">
+            <p class="eyebrow">INVENTORY REPORTS</p>
+            <h1>Damage &amp; Loss Incidents</h1>
+            <p>Review reported incidents against organizational assets, including review outcomes.</p>
+        </section>
+
+        <p th:if="${errorMessage != null}"
+           th:text="${errorMessage}"
+           style="margin: 0 0 20px; padding: 12px 16px; border-radius: 10px;
+                  background: #fff1f2; color: #b42318; border: 1px solid #fecdd3; font-size: 13px;"></p>
+
+        <!-- Filters -->
+        <section class="account-panel" style="margin-bottom: 24px; flex-direction: column; align-items: flex-start; gap: 16px;">
+            <h2 style="margin: 0; font-size: 15px; color: #172d50;">Filter Incidents</h2>
+            <form id="incident-filter-form" method="get" th:action="@{/reports/incidents}"
+                  style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-type" style="font-size: 12px; font-weight: 600; color: #475467;">Incident Type</label>
+                    <select id="filter-type" name="incidentType" style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; min-width: 160px; background: #fff;">
+                        <option value="ALL" th:selected="${selectedIncidentType == null or selectedIncidentType == 'ALL'}">All Types</option>
+                        <option th:each="t : ${incidentTypeOptions}"
+                                th:value="${t}"
+                                th:text="${#strings.replace(#strings.toLowerCase(t), '_', ' ')}"
+                                th:selected="${selectedIncidentType != null and #strings.equals(selectedIncidentType, t)}">Type</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-status" style="font-size: 12px; font-weight: 600; color: #475467;">Status</label>
+                    <select id="filter-status" name="status" style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; min-width: 160px; background: #fff;">
+                        <option value="ALL" th:selected="${selectedStatus == null or selectedStatus == 'ALL'}">All Statuses</option>
+                        <option th:each="s : ${statusOptions}"
+                                th:value="${s}"
+                                th:text="${#strings.replace(#strings.toLowerCase(s), '_', ' ')}"
+                                th:selected="${selectedStatus != null and #strings.equals(selectedStatus, s)}">Status</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-start" style="font-size: 12px; font-weight: 600; color: #475467;">Reported From</label>
+                    <input id="filter-start" type="date" name="startDate" th:value="${startDate}"
+                           style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; background: #fff;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label for="filter-end" style="font-size: 12px; font-weight: 600; color: #475467;">Reported To</label>
+                    <input id="filter-end" type="date" name="endDate" th:value="${endDate}"
+                           style="padding: 8px 12px; border: 1px solid #c8d6e8; border-radius: 8px; font-size: 13px; background: #fff;">
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="submit" class="action-button" style="padding: 8px 18px; font-size: 13px;">Apply Filter</button>
+                    <a th:href="@{/reports/incidents}" class="action-button" style="padding: 8px 18px; font-size: 13px; background: transparent; border: 1px solid #c8d6e8; color: #172d50;">Reset</a>
+                </div>
+            </form>
+        </section>
+
+        <!-- Results Table -->
+        <section style="background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f1; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden;">
+            <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f1;">
+                <h2 style="margin: 0; font-size: 15px; color: #172d50;">
+                    Incident Records
+                    <span style="font-size: 13px; font-weight: 400; color: #68758a; margin-left: 8px;"
+                          th:text="'(' + ${#lists.size(incidents)} + ' records)'"></span>
+                </h2>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f8fafd; text-align: left; color: #475467;">
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Incident</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Asset</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Area</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Type</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Status</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Reported By</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Reported At</th>
+                            <th style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e2e8f1;">Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="inc, rowStat : ${incidents}"
+                            th:style="${rowStat.even} ? 'border-bottom: 1px solid #f0f4fa; background: #ffffff;' : 'border-bottom: 1px solid #f0f4fa; background: #fafbfd;'">
+                            <td style="padding: 12px 16px; font-weight: 600; color: #172d50;">
+                                <span th:text="'INC-' + ${inc.incidentId}"></span>
+                                <div>
+                                    <small style="font-weight: 400; color: #68758a;"
+                                           th:text="${inc.description != null and !inc.description.isEmpty() ? inc.description : 'No description recorded.'}"></small>
+                                </div>
+                                <div>
+                                    <a th:href="@{/incidents/{id}(id=${inc.incidentId})}"
+                                       style="font-size: 12px; color: #175cd3; text-decoration: none;">View &rarr;</a>
+                                </div>
+                            </td>
+                            <td style="padding: 12px 16px;">
+                                <strong th:text="${inc.property.propertyCode}"></strong><br>
+                                <small style="color: #68758a;" th:text="${inc.property.propertyType.name}"></small>
+                            </td>
+                            <td style="padding: 12px 16px;" th:text="${inc.property.area.name}"></td>
+                            <td style="padding: 12px 16px;">
+                                <span th:text="${inc.incidentType}"
+                                      th:style="'font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 600; background:'
+                                             + ${inc.incidentType == 'LOST' ? '#fff1f2; color: #b42318;'
+                                               : inc.incidentType == 'BROKEN' ? '#fdf4ff; color: #7c3aed;'
+                                               : '#fff7ed; color: #b54708;'}"></span>
+                            </td>
+                            <td style="padding: 12px 16px;">
+                                <span th:text="${inc.status}"
+                                      th:style="'font-size: 12px; padding: 3px 8px; border-radius: 6px; font-weight: 600; background:'
+                                             + ${inc.status == 'OPEN' ? '#fefce8; color: #854d0e;'
+                                               : inc.status == 'RESOLVED' ? '#f0fdf4; color: #067647;'
+                                               : inc.status == 'REJECTED' ? '#f8fafc; color: #475467;'
+                                               : '#eff6ff; color: #175cd3;'}"></span>
+                            </td>
+                            <td style="padding: 12px 16px;"
+                                th:text="${inc.reportedBy.firstName + ' ' + inc.reportedBy.lastName}"></td>
+                            <td style="padding: 12px 16px; color: #68758a;"
+                                th:text="${inc.createdAt != null ? #temporals.format(inc.createdAt, 'yyyy-MM-dd HH:mm') : '-'}"></td>
+                            <td style="padding: 12px 16px; color: #475467;">
+                                <span th:if="${inc.decision != null and !inc.decision.isEmpty()}"
+                                      th:text="${inc.decision}"></span>
+                                <span th:if="${inc.decision == null or inc.decision.isEmpty()}"
+                                      style="color: #68758a;">Awaiting review</span>
+                                <br th:if="${inc.actionTaken != null and !inc.actionTaken.isEmpty()}">
+                                <small th:if="${inc.actionTaken != null and !inc.actionTaken.isEmpty()}"
+                                       style="color: #68758a;" th:text="'Action: ' + ${inc.actionTaken}"></small>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(incidents)}">
+                            <td colspan="8" style="padding: 40px; text-align: center; color: #68758a;">
+                                <p style="margin: 0; font-size: 14px;">No incidents match the selected filters.</p>
+                                <a th:href="@{/reports/incidents}" style="color: #175cd3; font-size: 13px; margin-top: 8px; display: inline-block;">Clear filters</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer style="margin-top: 32px; text-align: center; color: #68758a; font-size: 12px; padding-bottom: 24px;">
+            BSAA Asset Management System
+        </footer>
+    </main>
+
+</body>
+</html>

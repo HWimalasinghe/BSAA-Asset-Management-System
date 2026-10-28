@@ -16,4 +16,6 @@ public interface PropertyCategoryRepository
     );
 
     List<PropertyCategory> findAllByOrderByNameAsc();
+
+    List<PropertyCategory> findAllByActiveTrueOrderByNameAsc();
 }

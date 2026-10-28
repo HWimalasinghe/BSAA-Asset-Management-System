@@ -3,18 +3,27 @@ package com.bssa.assetmanagement.controller;
 import com.bssa.assetmanagement.entity.AppUser;
 import com.bssa.assetmanagement.repository.AppUserRepository;
 
+import com.bssa.assetmanagement.service.DashboardReportService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Controller
 public class PageController {
 
     private final AppUserRepository appUserRepository;
+    private final DashboardReportService dashboardReportService;
 
-    public PageController(AppUserRepository appUserRepository) {
+    public PageController(
+            AppUserRepository appUserRepository,
+            DashboardReportService dashboardReportService) {
         this.appUserRepository = appUserRepository;
+        this.dashboardReportService = dashboardReportService;
     }
 
     @GetMapping("/login")
@@ -66,13 +75,23 @@ public class PageController {
 
         model.addAttribute("userEmail", appUser.getEmail());
 
-        String role = authentication.getAuthorities().stream()
+        Set<String> roleNames = authentication.getAuthorities().stream()
                 .map(authority -> authority.getAuthority())
                 .filter(authority -> authority.startsWith("ROLE_"))
                 .map(authority -> authority.substring(5))
-                .findFirst()
-                .orElse("USER");
+                .collect(Collectors.toSet());
 
-        model.addAttribute("userRole", role);
+        // A user may hold several roles. Show the first one as a label, but
+        // decide dashboard visibility from the whole set.
+        String primaryRole = roleNames.stream()
+                .filter(DashboardReportService.OVERVIEW_ROLES::contains)
+                .findFirst()
+                .orElse(roleNames.stream().findFirst().orElse("USER"));
+
+        model.addAttribute("userRole", primaryRole);
+
+        Map<String, Object> metrics = dashboardReportService.getDashboardMetrics(
+                appUser.getEmail(), roleNames);
+        model.addAllAttributes(metrics);
     }
 }
