@@ -389,8 +389,17 @@ public class PropertyRequestService {
 
         List<PropertyAssignment> assignments = new ArrayList<>();
 
-        for (Long propertyId : propertyIds) {
-            Property property = propertyRepository.findById(propertyId)
+        // Allocated in asset order rather than in the order they were submitted.
+        // Each asset is locked below, so two fulfillments that share assets but
+        // list them the other way round would each hold what the other waits for.
+        List<Long> allocationOrder = propertyIds.stream().sorted().toList();
+
+        for (Long propertyId : allocationOrder) {
+            // Locked read, as in PropertyAssignmentService.assignProperty: the
+            // three checks below all decide from this row, and only a locking
+            // read is certain to see what a competing transaction has just
+            // committed to it.
+            Property property = propertyRepository.findByPropertyIdForUpdate(propertyId)
                     .orElseThrow(() -> new IllegalArgumentException("Property not found with ID: " + propertyId));
 
             if (requestedType != null && !property.getPropertyType().getPropertyTypeId().equals(requestedType.getPropertyTypeId())) {

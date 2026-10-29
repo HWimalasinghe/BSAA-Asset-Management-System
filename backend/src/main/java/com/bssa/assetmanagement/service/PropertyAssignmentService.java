@@ -85,7 +85,10 @@ public class PropertyAssignmentService {
             String notes,
             String issuerEmail) {
 
-        Property property = propertyRepository.findById(propertyId)
+        // Read under a write lock: everything below decides from this row, and
+        // a second issue of the same asset must not be able to read it as still
+        // available while this transaction is working on it.
+        Property property = propertyRepository.findByPropertyIdForUpdate(propertyId)
                 .orElseThrow(() ->
                         new IllegalArgumentException("Property not found."));
 

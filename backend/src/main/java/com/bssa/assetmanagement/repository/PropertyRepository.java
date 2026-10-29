@@ -6,8 +6,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PropertyRepository extends JpaRepository<Property, Long> {
 
@@ -15,6 +20,23 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
 
     boolean existsByPropertyCodeIgnoreCaseAndPropertyIdNot(
             String propertyCode, Long propertyId);
+
+    /**
+     * The asset exactly as the database holds it, with a write lock kept until
+     * the calling transaction ends.
+     *
+     * Issuing an asset is read-then-write: its availability is checked and only
+     * then is the assignment row created. Two requests that overlap would both
+     * read the same asset as available and both allocate it, so the second one
+     * must be made to wait for the first to finish. A locking read is also the
+     * only read that sees what the first transaction committed - a plain read
+     * may answer from a snapshot taken before it. The same pattern already
+     * guards the single Inventory Admin rule in
+     * {@link RoleRepository#findByNameForUpdate(String)}.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Property p WHERE p.propertyId = :propertyId")
+    Optional<Property> findByPropertyIdForUpdate(@Param("propertyId") Long propertyId);
 
     @EntityGraph(attributePaths = {"propertyType", "area"})
     List<Property> findAllByOrderByPropertyIdDesc();

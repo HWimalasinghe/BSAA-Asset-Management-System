@@ -145,7 +145,9 @@ class PropertyRequestServiceTest {
         when(propertyTypeRepository.findById(102L)).thenReturn(Optional.of(otherPropertyType));
 
         when(physicalAreaRepository.findById(1L)).thenReturn(Optional.of(activeArea));
-        when(propertyRepository.findById(500L)).thenReturn(Optional.of(availableProperty));
+        // Fulfillment reads the asset under a write lock, so that is the finder
+        // the stub has to answer.
+        when(propertyRepository.findByPropertyIdForUpdate(500L)).thenReturn(Optional.of(availableProperty));
     }
 
     @Test

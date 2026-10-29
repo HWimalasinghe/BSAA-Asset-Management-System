@@ -96,7 +96,9 @@ class PropertyAssignmentServiceTest {
         availableProperty.setPropertyType(propertyType);
         availableProperty.setArea(activeArea);
 
-        when(propertyRepository.findById(50L)).thenReturn(Optional.of(availableProperty));
+        // The service reads the asset under a write lock, so that is the finder
+        // the stubs have to answer.
+        when(propertyRepository.findByPropertyIdForUpdate(50L)).thenReturn(Optional.of(availableProperty));
         when(appUserRepository.findById(2L)).thenReturn(Optional.of(employeeUser));
         when(appUserRepository.findByEmail("manager@example.com")).thenReturn(Optional.of(managerUser));
         when(physicalAreaRepository.findById(5L)).thenReturn(Optional.of(activeArea));
@@ -156,7 +158,7 @@ class PropertyAssignmentServiceTest {
 
     @Test
     void assignProperty_propertyNotFound_throwsIllegalArgumentException() {
-        when(propertyRepository.findById(999L)).thenReturn(Optional.empty());
+        when(propertyRepository.findByPropertyIdForUpdate(999L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.assignProperty(999L, 2L, 5L, "GOOD", null, "manager@example.com"));
