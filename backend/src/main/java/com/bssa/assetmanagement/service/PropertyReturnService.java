@@ -15,10 +15,29 @@ import com.bssa.assetmanagement.repository.PropertyReturnRepository;
 import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 public class PropertyReturnService {
+
+    /**
+     * Columns the return log may be ordered by, as the sort keys the page uses
+     * mapped to the properties they order by.
+     */
+    public static final Map<String, String> RETURN_LOG_SORT_OPTIONS = Map.of(
+            "returned", "returnId",
+            "code", "assignment.property.propertyCode",
+            "holder", "assignment.employee.lastName",
+            "receiver", "receivedBy.lastName",
+            "condition", "condition");
+
+    /** Unique key appended to every order so equal rows keep their place across pages. */
+    public static final String RETURN_LOG_TIE_BREAKER = "returnId";
+    public static final String DEFAULT_RETURN_LOG_SORT = "returned";
 
     private final PropertyAssignmentRepository assignmentRepository;
     private final PropertyReturnRepository returnRepository;
@@ -206,5 +225,38 @@ public class PropertyReturnService {
     @jakarta.transaction.Transactional(jakarta.transaction.Transactional.TxType.SUPPORTS)
     public java.util.List<PropertyReturn> findAllReturns() {
         return returnRepository.findAllByOrderByReturnIdDesc();
+    }
+
+    /**
+     * One page of the return log, searched and filtered, in a stable order.
+     *
+     * The condition vocabulary is the one a return can be recorded with, so a
+     * value from elsewhere is refused rather than quietly turned into a query.
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Page<PropertyReturn> searchReturns(
+            String search,
+            String condition,
+            Integer page,
+            Integer size,
+            String sortKey,
+            String sortDirection) {
+
+        Pageable pageable = PagingSupport.pageRequest(
+                page, size, sortKey, sortDirection,
+                RETURN_LOG_SORT_OPTIONS, DEFAULT_RETURN_LOG_SORT, RETURN_LOG_TIE_BREAKER);
+
+        String term = PagingSupport.normalizedSearch(search);
+        String conditionFilter = PropertyService.acceptedCondition(condition);
+
+        if (conditionFilter == null && condition != null && !condition.isBlank()) {
+            throw new IllegalArgumentException("Unrecognised condition filter: " + condition);
+        }
+
+        return returnRepository.findReturnPage(
+                term,
+                term == null ? null : PagingSupport.likePattern(term),
+                conditionFilter,
+                pageable);
     }
 }

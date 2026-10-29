@@ -3,7 +3,9 @@ package com.bssa.assetmanagement.controller;
 
 import com.bssa.assetmanagement.repository.PropertyAssignmentRepository;
 import com.bssa.assetmanagement.repository.PropertyReturnRepository;
+import com.bssa.assetmanagement.service.PagingSupport;
 import com.bssa.assetmanagement.service.PropertyReturnService;
+import com.bssa.assetmanagement.service.PropertyService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Controller;
@@ -32,13 +34,57 @@ public class PropertyReturnController {
     }
 
     @GetMapping
-    public String listReturns(Model model, Authentication authentication) {
-        model.addAttribute(
-                "returns",
-                returnRepository.findAllByOrderByReturnIdDesc()
-        );
+    public String listReturns(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String condition,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String dir,
+            Model model,
+            Authentication authentication) {
+
         model.addAttribute("hasReturnPrivilege", hasReturnRole(authentication));
+
+        String sortKey = PagingSupport.safeSortKey(
+                sort, PropertyReturnService.RETURN_LOG_SORT_OPTIONS,
+                PropertyReturnService.DEFAULT_RETURN_LOG_SORT);
+        String direction = PagingSupport.safeDirection(dir);
+        int pageSize = PagingSupport.safeSize(size);
+        String conditionFilter = PropertyService.acceptedCondition(condition);
+
+        model.addAttribute("search", search);
+        model.addAttribute("conditionFilter", conditionFilter);
+        model.addAttribute("conditionOptions", sortedOptions(PropertyService.ALLOWED_CONDITIONS));
+
+        // Only values the log accepts, so a filter typed by hand is neither
+        // queried nor echoed into the pager and column-header links.
+        String baseQuery = ListPageView.query()
+                .add("search", search)
+                .add("condition", conditionFilter)
+                .add("size", pageSize)
+                .toString();
+
+        ListPageView.addListState(model, sortKey, direction, pageSize, baseQuery,
+                notBlank(search) || notBlank(condition));
+
+        try {
+            ListPageView.addPageAttributes(model, "returns", returnService.searchReturns(
+                    search, condition, page, pageSize, sortKey, direction));
+        } catch (IllegalArgumentException ex) {
+            model.addAttribute("errorMessage", "That filter is not one of the available options.");
+            ListPageView.addEmptyPageAttributes(model, "returns");
+        }
+
         return "returns/list";
+    }
+
+    private static boolean notBlank(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private static java.util.List<String> sortedOptions(java.util.Set<String> values) {
+        return values.stream().sorted().toList();
     }
 
     @GetMapping("/new")

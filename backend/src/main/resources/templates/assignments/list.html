@@ -48,16 +48,67 @@
                     </a>
                 </div>
 
+                <form class="list-filters" method="get" th:action="@{/assignments}">
+                    <div class="filter-grid">
+                        <div class="filter-field filter-search">
+                            <label for="search">Search</label>
+                            <input id="search" name="search" type="search" th:value="${search}"
+                                   placeholder="Asset code, type, holder or issuer"
+                                   maxlength="100">
+                        </div>
+
+                        <div class="filter-field">
+                            <label for="areaId">Issue area</label>
+                            <select id="areaId" name="areaId">
+                                <option value="">All areas</option>
+                                <option th:each="option : ${areaOptions}"
+                                        th:value="${option.areaId}" th:text="${option.name}"
+                                        th:selected="${option.areaId == areaId}"></option>
+                            </select>
+                        </div>
+
+                        <div class="filter-field">
+                            <label for="holding">Held or returned</label>
+                            <select id="holding" name="holding">
+                                <option value="">Both</option>
+                                <option value="HELD" th:selected="${holdingFilter == 'HELD'}">Still held</option>
+                                <option value="RETURNED" th:selected="${holdingFilter == 'RETURNED'}">Returned</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-field filter-size">
+                            <label for="size">Rows per page</label>
+                            <select id="size" name="size">
+                                <option th:each="option : ${pageSizes}"
+                                        th:value="${option}" th:text="${option}"
+                                        th:selected="${option == pageSize}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Keep the current order when a filter is applied. -->
+                    <input type="hidden" name="sort" th:value="${sortKey}">
+                    <input type="hidden" name="dir" th:value="${sortDirection}">
+
+                    <div class="filter-actions">
+                        <button type="submit" class="primary-button">Apply filters</button>
+
+                        <a class="back-link" th:if="${filtersActive}" th:href="@{/assignments}">
+                            Clear filters
+                        </a>
+                    </div>
+                </form>
+
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                         <tr>
                             <th style="text-align: left; padding: 12px;">ID</th>
-                            <th style="text-align: left; padding: 12px;">Property</th>
-                            <th style="text-align: left; padding: 12px;">Employee</th>
-                            <th style="text-align: left; padding: 12px;">Issue Area</th>
-                            <th style="text-align: left; padding: 12px;">Condition</th>
-                            <th style="text-align: left; padding: 12px;">Issued At</th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/assignments', 'Property', 'code')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/assignments', 'Employee', 'holder')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/assignments', 'Issue Area', 'area')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/assignments', 'Condition', 'condition')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/assignments', 'Issued At', 'issued')}"></th>
                             <th style="text-align: left; padding: 12px;">Issued By</th>
                         </tr>
                         </thead>
@@ -94,13 +145,16 @@
 
                         <tr th:if="${#lists.isEmpty(assignments)}">
                             <td colspan="7"
-                                style="padding: 24px; text-align: center;">
-                                No property assignments have been recorded yet.
-                            </td>
+                                style="padding: 24px; text-align: center;"
+                                th:text="${filtersActive}
+                                    ? 'No assignments match this search or these filters.'
+                                    : 'No property assignments have been recorded yet.'"></td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <div th:replace="~{fragments/list-nav :: pager('/assignments')}"></div>
             </section>
         </main>
 

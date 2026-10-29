@@ -2,6 +2,8 @@
 package com.bssa.assetmanagement.repository;
 
 import com.bssa.assetmanagement.entity.Property;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -88,6 +90,70 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
         "ORDER BY a.name ASC"
     )
     List<GroupedCount> countGroupedByArea();
+
+    /**
+     * Paged, searchable asset register. Every condition is optional, so the
+     * database does the filtering and only one page of rows is returned.
+     * The search term is matched case-insensitively against the fields an
+     * inventory user would recognise: asset code, serial number, description,
+     * property type, category and physical area.
+     *
+     * LIKE wildcards in the caller-supplied pattern are escaped with '!'.
+     * Sorting is supplied through the Pageable so the pager can offer a stable
+     * order; no ORDER BY belongs in this JPQL.
+     */
+    @EntityGraph(attributePaths = {"propertyType", "propertyType.category", "area"})
+    @org.springframework.data.jpa.repository.Query(
+        value =
+        "SELECT p FROM Property p " +
+        "JOIN FETCH p.propertyType pt " +
+        "JOIN FETCH pt.category cat " +
+        "JOIN FETCH p.area a " +
+        "WHERE (:search IS NULL " +
+        "   OR LOWER(p.propertyCode) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(p.serialNumber) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(p.description) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(pt.name) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(cat.name) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(a.name) LIKE :pattern ESCAPE '!') " +
+        "AND (:status IS NULL OR p.status = :status) " +
+        "AND (:condition IS NULL OR p.condition = :condition) " +
+        "AND (:categoryId IS NULL OR cat.categoryId = :categoryId) " +
+        "AND (:propertyTypeId IS NULL OR pt.propertyTypeId = :propertyTypeId) " +
+        "AND (:areaId IS NULL OR a.areaId = :areaId) " +
+        "AND (:purchaseFrom IS NULL OR p.purchaseDate >= :purchaseFrom) " +
+        "AND (:purchaseTo IS NULL OR p.purchaseDate <= :purchaseTo)",
+        countQuery =
+        "SELECT COUNT(p) FROM Property p " +
+        "JOIN p.propertyType pt " +
+        "JOIN pt.category cat " +
+        "JOIN p.area a " +
+        "WHERE (:search IS NULL " +
+        "   OR LOWER(p.propertyCode) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(p.serialNumber) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(p.description) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(pt.name) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(cat.name) LIKE :pattern ESCAPE '!' " +
+        "   OR LOWER(a.name) LIKE :pattern ESCAPE '!') " +
+        "AND (:status IS NULL OR p.status = :status) " +
+        "AND (:condition IS NULL OR p.condition = :condition) " +
+        "AND (:categoryId IS NULL OR cat.categoryId = :categoryId) " +
+        "AND (:propertyTypeId IS NULL OR pt.propertyTypeId = :propertyTypeId) " +
+        "AND (:areaId IS NULL OR a.areaId = :areaId) " +
+        "AND (:purchaseFrom IS NULL OR p.purchaseDate >= :purchaseFrom) " +
+        "AND (:purchaseTo IS NULL OR p.purchaseDate <= :purchaseTo)"
+    )
+    Page<Property> findFilterPage(
+            @org.springframework.data.repository.query.Param("search") String search,
+            @org.springframework.data.repository.query.Param("pattern") String pattern,
+            @org.springframework.data.repository.query.Param("status") String status,
+            @org.springframework.data.repository.query.Param("condition") String condition,
+            @org.springframework.data.repository.query.Param("categoryId") Long categoryId,
+            @org.springframework.data.repository.query.Param("propertyTypeId") Long propertyTypeId,
+            @org.springframework.data.repository.query.Param("areaId") Long areaId,
+            @org.springframework.data.repository.query.Param("purchaseFrom") java.time.LocalDate purchaseFrom,
+            @org.springframework.data.repository.query.Param("purchaseTo") java.time.LocalDate purchaseTo,
+            Pageable pageable);
 
     /** Projected row of a grouped database count. */
     interface GroupedCount {

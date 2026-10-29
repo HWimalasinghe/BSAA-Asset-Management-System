@@ -17,9 +17,18 @@ import com.bssa.assetmanagement.repository.PropertyRequestRepository;
 import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
 import com.bssa.assetmanagement.repository.PropertyTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -475,9 +484,39 @@ public class PropertyRequestService {
         return requestRepository.findAllByRequesterOrderByRequestIdDesc(user);
     }
 
+    /**
+     * One page of every request, newest first, for the panel that reviews the
+     * whole history.
+     *
+     * Identifiers are paginated and the rows for this page are then loaded with
+     * their items, so a reviewer opening the fifth page of an old queue reads
+     * twenty-five requests rather than the entire history.
+     */
     @Transactional(readOnly = true)
-    public List<PropertyRequest> getAllRequests() {
-        return requestRepository.findAllByOrderByRequestIdDesc();
+    public Page<PropertyRequest> getAllRequestsPage(Integer page, Integer size) {
+        Pageable pageRequest = PageRequest.of(
+                PagingSupport.safePage(page),
+                PagingSupport.safeSize(size),
+                Sort.by(Sort.Direction.DESC, "requestId"));
+
+        Page<Long> ids = requestRepository.findRequestIdPage(pageRequest);
+
+        if (!ids.hasContent()) {
+            return new PageImpl<>(List.of(), pageRequest, ids.getTotalElements());
+        }
+
+        // The rows arrive in whatever order the database chose, so they are put
+        // back into the order this page was built with.
+        Map<Long, PropertyRequest> byId = requestRepository
+                .findWithDetailsByRequestIdIn(ids.getContent()).stream()
+                .collect(Collectors.toMap(PropertyRequest::getRequestId, request -> request));
+
+        List<PropertyRequest> rows = ids.getContent().stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
+                .toList();
+
+        return new PageImpl<>(rows, pageRequest, ids.getTotalElements());
     }
 
     @Transactional(readOnly = true)

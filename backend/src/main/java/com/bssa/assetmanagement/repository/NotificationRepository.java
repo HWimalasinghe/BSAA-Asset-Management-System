@@ -1,19 +1,28 @@
 package com.bssa.assetmanagement.repository;
 
 import com.bssa.assetmanagement.entity.Notification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-    List<Notification> findByUser_UserIdOrderByCreatedAtDesc(Long userId);
+    /**
+     * One page of somebody's own notifications, newest first.
+     *
+     * The identifier is part of the order so that notifications created in the
+     * same second cannot swap places between two pages.
+     */
+    Page<Notification> findByUser_UserIdOrderByCreatedAtDescNotificationIdDesc(
+            Long userId, Pageable pageable);
 
-    List<Notification> findByUser_UserIdAndReadFalseOrderByCreatedAtDesc(Long userId);
+    Page<Notification> findByUser_UserIdAndReadFalseOrderByCreatedAtDescNotificationIdDesc(
+            Long userId, Pageable pageable);
 
     long countByUser_UserIdAndReadFalse(Long userId);
 

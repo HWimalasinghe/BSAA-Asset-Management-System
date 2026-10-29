@@ -7,6 +7,10 @@ import com.bssa.assetmanagement.repository.AppUserRepository;
 import com.bssa.assetmanagement.repository.DepartmentRepository;
 import com.bssa.assetmanagement.repository.RoleRepository;
 
+import com.bssa.assetmanagement.service.PagingSupport;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,12 +26,34 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/users")
 public class UserManagementController {
+
+    /**
+     * Columns the account list may be ordered by, as the sort keys the page uses
+     * mapped to the properties they order by. Roles and the password hash are
+     * deliberately absent: a list must not be navigable by a column it does not
+     * show, let alone by a secret it never shows.
+     */
+    private static final Map<String, String> ACCOUNT_LIST_SORT_OPTIONS = Map.of(
+            "code", "employeeCode",
+            "name", "lastName",
+            "email", "email",
+            "department", "departmentId",
+            "status", "active",
+            "joined", "userId");
+
+    /** Unique key appended to every order so equal rows keep their place across pages. */
+    private static final String ACCOUNT_LIST_TIE_BREAKER = "userId";
+    private static final String DEFAULT_ACCOUNT_LIST_SORT = "code";
+
+    /** Whether an account is switched on, which is how the list is narrowed. */
+    private static final List<String> ACCOUNT_STATUS_OPTIONS = List.of("ACTIVE", "INACTIVE");
 
     private final AppUserRepository appUserRepository;
     private final DepartmentRepository departmentRepository;
@@ -49,6 +75,13 @@ public class UserManagementController {
     // List user accounts and identify accounts the current administrator can manage.
     @GetMapping
     public String listUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) String accountStatus,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String dir,
             Model model,
             Authentication authentication) {
 
@@ -56,22 +89,128 @@ public class UserManagementController {
             return "redirect:/login?logout";
         }
 
-        List<AppUser> users = appUserRepository.findAll();
+        String sortKey = PagingSupport.safeSortKey(
+                sort, ACCOUNT_LIST_SORT_OPTIONS, DEFAULT_ACCOUNT_LIST_SORT);
+        String direction = PagingSupport.safeDirection(dir);
+        int pageSize = PagingSupport.safeSize(size);
+        String statusFilter = acceptedAccountStatus(accountStatus);
+        Long department = departmentId == null || departmentId < 0 ? null : departmentId;
 
-        model.addAttribute("users", users);
+        model.addAttribute("search", search);
+        model.addAttribute("departmentId", department);
+        model.addAttribute("accountStatusFilter", statusFilter);
+        model.addAttribute("accountStatusOptions", ACCOUNT_STATUS_OPTIONS);
+        model.addAttribute(
+                "departmentOptions",
+                departmentRepository.findAllByOrderByNameAsc());
         model.addAttribute(
                 "isSystemAdmin",
                 hasRole(authentication, "SYSTEM_ADMIN")
         );
+        // The page asks before deactivating the last administrator. Counted here,
+        // across every page, because a page of accounts is no longer the whole
+        // list and would otherwise hide administrators still in post.
+        model.addAttribute(
+                "activeSystemAdminCount",
+                appUserRepository.findByActiveTrueAndRoles_Name("SYSTEM_ADMIN").size()
+        );
+
+        // Only values the list accepts, so a filter written by hand is neither
+        // queried nor echoed back into the pager and column-header links.
+        String baseQuery = ListPageView.query()
+                .add("search", search)
+                .add("departmentId", department)
+                .add("accountStatus", statusFilter)
+                .add("size", pageSize)
+                .toString();
+
+        ListPageView.addListState(model, sortKey, direction, pageSize, baseQuery,
+                notBlank(search) || department != null || notBlank(accountStatus));
+
+        Page<AppUser> result;
+        try {
+            result = findAccountPage(
+                    search, department, accountStatus, page, pageSize, sortKey, direction);
+        } catch (IllegalArgumentException ex) {
+            model.addAttribute("errorMessage", "That filter is not one of the available options.");
+            model.addAttribute("manageableUserIds", Set.of());
+            ListPageView.addEmptyPageAttributes(model, "users");
+            return "users/list";
+        }
+
+        ListPageView.addPageAttributes(model, "users", result);
+
+        // Which of the accounts on this page the caller may act on, worked out
+        // the same way as before: the page decides what to offer, the endpoints
+        // decide what is allowed.
         model.addAttribute(
                 "manageableUserIds",
-                users.stream()
+                result.getContent().stream()
                         .filter(user -> canManageTarget(authentication, user))
                         .map(AppUser::getUserId)
                         .collect(Collectors.toSet())
         );
 
         return "users/list";
+    }
+
+    /**
+     * One page of accounts.
+     *
+     * The identifiers are paginated and only the accounts on this page are then
+     * loaded, because roles are fetched eagerly: asking the database for a page
+     * of whole accounts would make it fetch every account's roles and cut the
+     * page down afterwards in memory.
+     */
+    private Page<AppUser> findAccountPage(
+            String search,
+            Long departmentId,
+            String accountStatus,
+            Integer page,
+            Integer size,
+            String sortKey,
+            String direction) {
+
+        Pageable pageRequest = PagingSupport.pageRequest(
+                page, size, sortKey, direction,
+                ACCOUNT_LIST_SORT_OPTIONS, DEFAULT_ACCOUNT_LIST_SORT, ACCOUNT_LIST_TIE_BREAKER);
+
+        String term = PagingSupport.normalizedSearch(search);
+        String statusFilter = acceptedAccountStatus(accountStatus);
+
+        if (statusFilter == null && accountStatus != null && !accountStatus.isBlank()) {
+            throw new IllegalArgumentException("Unrecognised account status filter: " + accountStatus);
+        }
+
+        Page<Long> ids = appUserRepository.findAccountIdPage(
+                term,
+                term == null ? null : PagingSupport.likePattern(term),
+                departmentId,
+                statusFilter,
+                pageRequest);
+
+        if (!ids.hasContent()) {
+            return new PageImpl<>(List.of(), pageRequest, ids.getTotalElements());
+        }
+
+        // Re-apply the same order to the rows: the identifier page and the rows
+        // must arrive in the same sequence for the pager to be truthful.
+        List<AppUser> rows = appUserRepository.findByUserIdIn(
+                ids.getContent(), Pageable.unpaged(pageRequest.getSort()));
+
+        return new PageImpl<>(rows, pageRequest, ids.getTotalElements());
+    }
+
+    /** The status as the list understands it, or null when blank or unknown. */
+    private static String acceptedAccountStatus(String accountStatus) {
+        String value = accountStatus == null || accountStatus.isBlank()
+                ? null
+                : accountStatus.trim().toUpperCase();
+        return value != null && ACCOUNT_STATUS_OPTIONS.contains(value) ? value : null;
+    }
+
+    private static boolean notBlank(String value) {
+        return value != null && !value.isBlank();
     }
 
     // Display the create-user form.

@@ -58,17 +58,115 @@
                 </div>
             </div>
 
+            <form class="list-filters" method="get" th:action="@{/properties}">
+                <div class="filter-grid">
+                    <div class="form-field filter-field filter-search">
+                        <label for="search">Search</label>
+                        <input id="search" name="search" type="search" th:value="${search}"
+                               placeholder="Code, serial, type, category, area or description"
+                               maxlength="100">
+                    </div>
+
+                    <div class="form-field filter-field">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="">All statuses</option>
+                            <option th:each="option : ${statusOptions}"
+                                    th:value="${option}" th:text="${option}"
+                                    th:selected="${option == statusFilter}"></option>
+                        </select>
+                    </div>
+
+                    <div class="form-field filter-field">
+                        <label for="condition">Condition</label>
+                        <select id="condition" name="condition">
+                            <option value="">All conditions</option>
+                            <option th:each="option : ${conditionOptions}"
+                                    th:value="${option}" th:text="${option}"
+                                    th:selected="${option == conditionFilter}"></option>
+                        </select>
+                    </div>
+
+                    <div class="form-field filter-field">
+                        <label for="categoryId">Category</label>
+                        <select id="categoryId" name="categoryId">
+                            <option value="">All categories</option>
+                            <option th:each="option : ${categoryOptions}"
+                                    th:value="${option.categoryId}" th:text="${option.name}"
+                                    th:selected="${option.categoryId == categoryId}"></option>
+                        </select>
+                    </div>
+
+                    <div class="form-field filter-field">
+                        <label for="propertyTypeId">Property type</label>
+                        <select id="propertyTypeId" name="propertyTypeId">
+                            <option value="">All types</option>
+                            <option th:each="option : ${typeOptions}"
+                                    th:value="${option.propertyTypeId}" th:text="${option.name}"
+                                    th:selected="${option.propertyTypeId == propertyTypeId}"></option>
+                        </select>
+                    </div>
+
+                    <div class="form-field filter-field">
+                        <label for="areaId">Physical area</label>
+                        <select id="areaId" name="areaId">
+                            <option value="">All areas</option>
+                            <option th:each="option : ${areaOptions}"
+                                    th:value="${option.areaId}" th:text="${option.name}"
+                                    th:selected="${option.areaId == areaId}"></option>
+                        </select>
+                    </div>
+
+                    <div class="form-field filter-field">
+                        <label for="purchaseFrom">Registered from</label>
+                        <input id="purchaseFrom" name="purchaseFrom" type="date" th:value="${purchaseFrom}">
+                    </div>
+
+                    <div class="form-field filter-field">
+                        <label for="purchaseTo">Registered to</label>
+                        <input id="purchaseTo" name="purchaseTo" type="date" th:value="${purchaseTo}">
+                    </div>
+
+                    <div class="form-field filter-field filter-size">
+                        <label for="size">Rows per page</label>
+                        <select id="size" name="size">
+                            <option th:each="option : ${pageSizes}"
+                                    th:value="${option}" th:text="${option}"
+                                    th:selected="${option == pageSize}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Keep the current order when a filter is applied. -->
+                <input type="hidden" name="sort" th:value="${sortKey}">
+                <input type="hidden" name="dir" th:value="${sortDirection}">
+
+                <div class="filter-actions">
+                    <button type="submit" class="primary-button">Apply filters</button>
+
+                    <a class="back-link" th:if="${filtersActive}" th:href="@{/properties}">
+                        Clear filters
+                    </a>
+
+                    <a class="secondary-button export-button"
+                       th:href="@{/properties/export.csv} + '?' + ${filterQuery}">
+                        Export CSV
+                    </a>
+                </div>
+            </form>
+
             <div class="table-wrapper">
                 <table class="property-table">
                     <thead>
                         <tr>
-                            <th>Property Code</th>
-                            <th>Property Type</th>
-                            <th>Physical Area</th>
-                            <th>Serial Number</th>
-                            <th>Registration Date</th>
-                            <th>Condition</th>
-                            <th>Status</th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/properties', 'Property Code', 'code')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/properties', 'Property Type', 'type')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/properties', 'Category', 'category')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/properties', 'Physical Area', 'area')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/properties', 'Serial Number', 'serial')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/properties', 'Registration Date', 'purchaseDate')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/properties', 'Condition', 'condition')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/properties', 'Status', 'status')}"></th>
                             <th>Description</th>
                             <th>Actions</th>
                         </tr>
@@ -80,6 +178,8 @@
                                 th:text="${property.propertyCode}"></td>
 
                             <td th:text="${property.propertyType.name}"></td>
+
+                            <td th:text="${property.propertyType.category.name}"></td>
 
                             <td th:text="${property.area.name}"></td>
 
@@ -126,13 +226,16 @@
                         </tr>
 
                         <tr th:if="${#lists.isEmpty(properties)}">
-                            <td colspan="9" class="empty-message">
-                                No properties have been registered yet.
-                            </td>
+                            <td colspan="10" class="empty-message"
+                                th:text="${filtersActive}
+                                    ? 'No assets match this search or these filters.'
+                                    : 'No properties have been registered yet.'"></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <div th:replace="~{fragments/list-nav :: pager('/properties')}"></div>
         </section>
 
         <footer>BSAA Asset Management System</footer>

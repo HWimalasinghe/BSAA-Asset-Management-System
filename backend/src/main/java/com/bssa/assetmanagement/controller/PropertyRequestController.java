@@ -7,6 +7,7 @@ import com.bssa.assetmanagement.repository.AppUserRepository;
 import com.bssa.assetmanagement.repository.PhysicalAreaRepository;
 import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyTypeRepository;
+import com.bssa.assetmanagement.service.PagingSupport;
 import com.bssa.assetmanagement.service.PropertyRequestService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -47,6 +48,8 @@ public class PropertyRequestController {
 
     @GetMapping
     public String listRequests(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
             Model model,
             Authentication authentication) {
 
@@ -60,10 +63,17 @@ public class PropertyRequestController {
         model.addAttribute("myRequests", myRequests);
         model.addAttribute("hasReviewPrivilege", hasReviewPrivilege);
 
+        // Only reviewers see the organization-wide history, so only reviewers
+        // make the query for it and are shown its row count.
         if (hasReviewPrivilege) {
             model.addAttribute("pendingRequests", requestService.getPendingRequests());
             model.addAttribute("pendingCount", requestService.countPendingRequests());
-            model.addAttribute("allRequests", requestService.getAllRequests());
+
+            int pageSize = PagingSupport.safeSize(size);
+            ListPageView.addPagingState(
+                    model, pageSize, ListPageView.query().add("size", pageSize).toString(), false);
+            ListPageView.addPageAttributes(
+                    model, "allRequests", requestService.getAllRequestsPage(page, pageSize));
         }
 
         return "requests/list";

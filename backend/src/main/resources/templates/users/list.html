@@ -46,7 +46,7 @@
             <div>
                 <h2>Employee Accounts</h2>
 
-                <p th:text="${#lists.size(users)} + ' account(s) found'">
+                <p th:text="${totalElements} + ' account(s) matching'">
                     0 account(s) found
                 </p>
 
@@ -56,9 +56,62 @@
             </div>
         </section>
 
+        <form class="list-filters" method="get" th:action="@{/users}" style="margin-top: 20px;">
+            <div class="filter-grid">
+                <div class="filter-field filter-search">
+                    <label for="search">Search</label>
+                    <input id="search" name="search" type="search" th:value="${search}"
+                           placeholder="Employee code, name or email"
+                           maxlength="100">
+                </div>
+
+                <div class="filter-field">
+                    <label for="departmentId">Department</label>
+                    <select id="departmentId" name="departmentId">
+                        <option value="">All departments</option>
+                        <option th:each="option : ${departmentOptions}"
+                                th:value="${option.departmentId}" th:text="${option.name}"
+                                th:selected="${option.departmentId == departmentId}"></option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="accountStatus">Account status</label>
+                    <select id="accountStatus" name="accountStatus">
+                        <option value="">Both</option>
+                        <option value="ACTIVE" th:selected="${accountStatusFilter == 'ACTIVE'}">Active</option>
+                        <option value="INACTIVE" th:selected="${accountStatusFilter == 'INACTIVE'}">Inactive</option>
+                    </select>
+                </div>
+
+                <div class="filter-field filter-size">
+                    <label for="size">Rows per page</label>
+                    <select id="size" name="size">
+                        <option th:each="option : ${pageSizes}"
+                                th:value="${option}" th:text="${option}"
+                                th:selected="${option == pageSize}"></option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Keep the current order when a filter is applied. -->
+            <input type="hidden" name="sort" th:value="${sortKey}">
+            <input type="hidden" name="dir" th:value="${sortDirection}">
+
+            <div class="filter-actions">
+                <button type="submit" class="primary-button">Apply filters</button>
+
+                <a class="back-link" th:if="${filtersActive}" th:href="@{/users}">
+                    Clear filters
+                </a>
+            </div>
+        </form>
+
         <div th:if="${#lists.isEmpty(users)}"
              style="margin-top: 20px;">
-            <p>No user accounts found.</p>
+            <p th:text="${filtersActive}
+                ? 'No accounts match this search or these filters.'
+                : 'No user accounts found.'"></p>
         </div>
 
         <div th:unless="${#lists.isEmpty(users)}"
@@ -67,12 +120,12 @@
             <table style="width: 100%; border-collapse: collapse; background: white;">
                 <thead>
                     <tr>
-                        <th style="padding: 12px; text-align: left;">Employee Code</th>
-                        <th style="padding: 12px; text-align: left;">Full Name</th>
-                        <th style="padding: 12px; text-align: left;">Email</th>
-                        <th style="padding: 12px; text-align: left;">Department ID</th>
+                        <th th:replace="~{fragments/list-nav :: sortableHeader('/users', 'Employee Code', 'code')}"></th>
+                        <th th:replace="~{fragments/list-nav :: sortableHeader('/users', 'Full Name', 'name')}"></th>
+                        <th th:replace="~{fragments/list-nav :: sortableHeader('/users', 'Email', 'email')}"></th>
+                        <th th:replace="~{fragments/list-nav :: sortableHeader('/users', 'Department ID', 'department')}"></th>
                         <th style="padding: 12px; text-align: left;">Position</th>
-                        <th style="padding: 12px; text-align: left;">Status</th>
+                        <th th:replace="~{fragments/list-nav :: sortableHeader('/users', 'Status', 'status')}"></th>
                         <th style="padding: 12px; text-align: left;">Roles</th>
                         <th style="padding: 12px; text-align: left;">Actions</th>
                     </tr>
@@ -147,9 +200,7 @@
                                                 and #lists.contains(
                                                     user.roles.![name],
                                                     'SYSTEM_ADMIN')
-                                                and #lists.size(users.?[
-                                                    active and roles.?[name == 'SYSTEM_ADMIN'].size() > 0
-                                                ]) <= 1)}"
+                                                and activeSystemAdminCount <= 1)}"
                                             th:onclick="|return confirm('Are you sure you want to ${user.active ? 'deactivate' : 'activate'} this account?');">
                                     </button>
                                 </form>
@@ -164,6 +215,8 @@
                 </tbody>
             </table>
         </div>
+
+        <div th:replace="~{fragments/list-nav :: pager('/users')}"></div>
 
         <footer>
             BSAA Asset Management System

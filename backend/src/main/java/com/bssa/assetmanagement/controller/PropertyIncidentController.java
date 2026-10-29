@@ -6,6 +6,7 @@ import com.bssa.assetmanagement.entity.PropertyIncident;
 import com.bssa.assetmanagement.repository.AppUserRepository;
 import com.bssa.assetmanagement.repository.PhysicalAreaRepository;
 import com.bssa.assetmanagement.repository.PropertyRepository;
+import com.bssa.assetmanagement.service.PagingSupport;
 import com.bssa.assetmanagement.service.PropertyIncidentService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -43,6 +44,8 @@ public class PropertyIncidentController {
 
     @GetMapping
     public String listIncidents(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
             Model model,
             Authentication authentication) {
 
@@ -56,10 +59,17 @@ public class PropertyIncidentController {
         model.addAttribute("myIncidents", myIncidents);
         model.addAttribute("hasReviewPrivilege", hasReviewPrivilege);
 
+        // The organization-wide register belongs to reviewers only, so the page
+        // count and the query behind it are never produced for anybody else.
         if (hasReviewPrivilege) {
             model.addAttribute("openIncidents", incidentService.getOpenIncidents());
             model.addAttribute("openCount", incidentService.countOpenIncidents());
-            model.addAttribute("allIncidents", incidentService.getAllIncidents());
+
+            int pageSize = PagingSupport.safeSize(size);
+            ListPageView.addPagingState(
+                    model, pageSize, ListPageView.query().add("size", pageSize).toString(), false);
+            ListPageView.addPageAttributes(
+                    model, "allIncidents", incidentService.getAllIncidentsPage(page, pageSize));
         }
 
         return "incidents/list";

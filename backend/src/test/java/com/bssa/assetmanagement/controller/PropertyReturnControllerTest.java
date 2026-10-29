@@ -11,6 +11,8 @@ import com.bssa.assetmanagement.repository.PropertyReturnRepository;
 import com.bssa.assetmanagement.service.PropertyReturnService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.ui.ConcurrentModel;
@@ -88,23 +90,78 @@ class PropertyReturnControllerTest {
     @Test
     void listReturns_populatesReturnsModel() {
         Model model = new ConcurrentModel();
-        when(returnRepository.findAllByOrderByReturnIdDesc()).thenReturn(List.of(new PropertyReturn()));
+        when(returnService.searchReturns(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(new PropertyReturn()), PageRequest.of(0, 25), 1));
 
-        String view = controller.listReturns(model, managerAuth);
+        String view = controller.listReturns(
+                null, null, null, null, null, null, model, managerAuth);
 
         assertEquals("returns/list", view);
         assertEquals(1, ((List<?>) model.getAttribute("returns")).size());
         assertEquals(true, model.getAttribute("hasReturnPrivilege"));
+        // The pager is drawn from the page the query reported, not from the rows.
+        assertEquals(1L, model.getAttribute("totalElements"));
+        assertEquals(0, model.getAttribute("pageNumber"));
+        assertEquals("returned", model.getAttribute("sortKey"));
+        assertEquals(25, model.getAttribute("pageSize"));
     }
 
     @Test
     void listReturns_staffUserHasNoReturnPrivilege() {
         Model model = new ConcurrentModel();
-        when(returnRepository.findAllByOrderByReturnIdDesc()).thenReturn(List.of());
+        when(returnService.searchReturns(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 25), 0));
 
-        controller.listReturns(model, staffAuth);
+        controller.listReturns(null, null, null, null, null, null, model, staffAuth);
 
         assertEquals(false, model.getAttribute("hasReturnPrivilege"));
+    }
+
+    @Test
+    void listReturns_requestValuesAreForwardedAsGiven() {
+        Model model = new ConcurrentModel();
+        when(returnService.searchReturns(
+                "laptop", "DAMAGED", 2, 10, "code", "desc"))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(2, 10), 0));
+
+        controller.listReturns("laptop", "DAMAGED", 2, 10, "code", "desc", model, managerAuth);
+
+        String filterQuery = (String) model.getAttribute("filterQuery");
+        assertTrue(filterQuery.contains("search=laptop"), filterQuery);
+        assertTrue(filterQuery.contains("condition=DAMAGED"), filterQuery);
+        assertTrue(filterQuery.contains("sort=code"), filterQuery);
+        assertTrue(filterQuery.contains("size=10"), filterQuery);
+        assertEquals(Boolean.TRUE, model.getAttribute("filtersActive"));
+    }
+
+    @Test
+    void listReturns_unsupportedSortAndPageSizeFallBackToTheDefaults() {
+        Model model = new ConcurrentModel();
+        when(returnService.searchReturns(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 25), 0));
+
+        controller.listReturns(null, null, -3, 999, "passwordHash", "sideways", model, managerAuth);
+
+        assertEquals("returned", model.getAttribute("sortKey"));
+        assertEquals("asc", model.getAttribute("sortDirection"));
+        assertEquals(25, model.getAttribute("pageSize"));
+    }
+
+    @Test
+    void listReturns_unrecognisedConditionIsReportedWithoutRepeatingTheValue() {
+        Model model = new ConcurrentModel();
+        when(returnService.searchReturns(any(), any(), any(), any(), any(), any()))
+                .thenThrow(new IllegalArgumentException("Unrecognised condition filter: SYSDBA"));
+
+        controller.listReturns(null, "SYSDBA", null, null, null, null, model, managerAuth);
+
+        assertEquals("That filter is not one of the available options.",
+                model.getAttribute("errorMessage"));
+        assertTrue(((List<?>) model.getAttribute("returns")).isEmpty());
+        assertEquals(0, model.getAttribute("totalPages"));
+        // The rejected value must not survive in the form or in any link.
+        assertNull(model.getAttribute("conditionFilter"));
+        assertFalse(((String) model.getAttribute("filterQuery")).contains("SYSDBA"));
     }
 
     @Test

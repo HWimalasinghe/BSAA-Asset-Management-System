@@ -12,6 +12,9 @@ import com.bssa.assetmanagement.repository.PropertyIncidentRepository;
 import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -363,9 +366,20 @@ public class PropertyIncidentService {
         return incidentRepository.findAllByReportedByOrderByIncidentIdDesc(user);
     }
 
+    /**
+     * One page of the incident history, newest first, for the panel that reviews
+     * every incident ever reported.
+     *
+     * The order is the one the panel already used, with the identifier giving it
+     * stability: incidents reported in the same instant keep their places
+     * between pages.
+     */
     @Transactional(readOnly = true)
-    public List<PropertyIncident> getAllIncidents() {
-        return incidentRepository.findAllByOrderByIncidentIdDesc();
+    public Page<PropertyIncident> getAllIncidentsPage(Integer page, Integer size) {
+        return incidentRepository.findIncidentPage(PageRequest.of(
+                PagingSupport.safePage(page),
+                PagingSupport.safeSize(size),
+                Sort.by(Sort.Direction.DESC, "incidentId")));
     }
 
     @Transactional(readOnly = true)

@@ -2,6 +2,8 @@ package com.bssa.assetmanagement.repository;
 
 import com.bssa.assetmanagement.entity.AppUser;
 import com.bssa.assetmanagement.entity.PropertyIncident;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
@@ -13,9 +15,6 @@ public interface PropertyIncidentRepository extends JpaRepository<PropertyIncide
 
     @EntityGraph(attributePaths = {"property", "property.propertyType", "property.area", "reportedBy", "reviewedBy"})
     List<PropertyIncident> findAllByReportedByOrderByIncidentIdDesc(AppUser reportedBy);
-
-    @EntityGraph(attributePaths = {"property", "property.propertyType", "property.area", "reportedBy", "reviewedBy"})
-    List<PropertyIncident> findAllByOrderByIncidentIdDesc();
 
     @EntityGraph(attributePaths = {"property", "property.propertyType", "property.area", "reportedBy", "reviewedBy"})
     List<PropertyIncident> findAllByStatusOrderByIncidentIdDesc(String status);
@@ -44,4 +43,17 @@ public interface PropertyIncidentRepository extends JpaRepository<PropertyIncide
             @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
             @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate
     );
+
+    /**
+     * One page of the incident history, in the order the caller asked for.
+     *
+     * The order comes from a validated Pageable rather than from the text of the
+     * query, so an unrecognised sort can never reach the database.
+     */
+    @EntityGraph(attributePaths = {"property", "property.propertyType", "property.area", "reportedBy", "reviewedBy"})
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT i FROM PropertyIncident i",
+        countQuery = "SELECT COUNT(i) FROM PropertyIncident i"
+    )
+    Page<PropertyIncident> findIncidentPage(Pageable pageable);
 }

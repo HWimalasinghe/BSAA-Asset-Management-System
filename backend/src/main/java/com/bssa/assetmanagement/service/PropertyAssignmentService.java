@@ -14,9 +14,34 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.bssa.assetmanagement.entity.PropertyStatusHistory;
 import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class PropertyAssignmentService {
+
+    /**
+     * Columns the assignment log may be ordered by, as the sort keys the page
+     * uses mapped to the properties they order by. Only these reach the query,
+     * so the address bar cannot sort by an unmapped column.
+     */
+    public static final Map<String, String> ASSIGNMENT_LOG_SORT_OPTIONS = Map.of(
+            "issued", "assignmentId",
+            "code", "property.propertyCode",
+            "holder", "employee.lastName",
+            "area", "area.name",
+            "condition", "conditionAtIssue");
+
+    /** Unique key appended to every order so equal rows keep their place across pages. */
+    public static final String ASSIGNMENT_LOG_TIE_BREAKER = "assignmentId";
+    public static final String DEFAULT_ASSIGNMENT_LOG_SORT = "issued";
+
+    /** Whether the asset is still with its holder, which is how the log is narrowed. */
+    public static final List<String> HOLDING_OPTIONS = List.of("HELD", "RETURNED");
+
 
     private final PropertyRepository propertyRepository;
     private final AppUserRepository appUserRepository;
@@ -155,5 +180,53 @@ public class PropertyAssignmentService {
         }
 
         return saved;
+    }
+
+    /**
+     * One page of the assignment log, searched and filtered, in a stable order.
+     *
+     * The role rules that already keep this page away from staff who may not
+     * read it are applied before the controller calls this; the search adds no
+     * columns beyond the ones the log lists, so a paged search cannot reach data
+     * the page would not have shown anyway.
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Page<PropertyAssignment> searchAssignments(
+            String search,
+            Long areaId,
+            String holding,
+            Integer page,
+            Integer size,
+            String sortKey,
+            String sortDirection) {
+
+        Pageable pageable = PagingSupport.pageRequest(
+                page, size, sortKey, sortDirection,
+                ASSIGNMENT_LOG_SORT_OPTIONS, DEFAULT_ASSIGNMENT_LOG_SORT, ASSIGNMENT_LOG_TIE_BREAKER);
+
+        String term = PagingSupport.normalizedSearch(search);
+        String holdingFilter = acceptedHolding(holding);
+
+        if (holdingFilter == null && holding != null && !holding.isBlank()) {
+            throw new IllegalArgumentException("Unrecognised holding filter: " + holding);
+        }
+
+        return assignmentRepository.findAssignmentPage(
+                term,
+                term == null ? null : PagingSupport.likePattern(term),
+                areaId == null || areaId < 0 ? null : areaId,
+                holdingFilter,
+                pageable);
+    }
+
+    /**
+     * The holding filter as the log understands it, or null when it is blank or
+     * unknown, so a rejected value is never echoed back into a link.
+     */
+    public static String acceptedHolding(String holding) {
+        String value = holding == null || holding.isBlank()
+                ? null
+                : holding.trim().toUpperCase();
+        return value != null && HOLDING_OPTIONS.contains(value) ? value : null;
     }
 }

@@ -11,6 +11,8 @@ import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.service.PropertyIncidentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -96,12 +98,16 @@ class PropertyIncidentControllerTest {
         PropertyIncident inc = new PropertyIncident();
         when(incidentService.getMyIncidents("staff@example.com")).thenReturn(List.of(inc));
 
-        String view = controller.listIncidents(model, staffAuth);
+        String view = controller.listIncidents(null, null, model, staffAuth);
 
         assertEquals("incidents/list", view);
         assertEquals(false, model.getAttribute("hasReviewPrivilege"));
         assertEquals(1, ((List<?>) model.getAttribute("myIncidents")).size());
         assertNull(model.getAttribute("openIncidents"));
+        // The organization-wide register is not queried, so its row count never
+        // reaches a page a staff member can open.
+        verify(incidentService, never()).getAllIncidentsPage(any(), any());
+        assertNull(model.getAttribute("totalElements"));
     }
 
     @Test
@@ -109,14 +115,38 @@ class PropertyIncidentControllerTest {
         Model model = new ConcurrentModel();
         when(incidentService.getMyIncidents("manager@example.com")).thenReturn(List.of());
         when(incidentService.getOpenIncidents()).thenReturn(List.of(new PropertyIncident()));
-        when(incidentService.getAllIncidents()).thenReturn(List.of(new PropertyIncident()));
+        when(incidentService.getAllIncidentsPage(null, 25)).thenReturn(new PageImpl<>(
+                List.of(new PropertyIncident()), PageRequest.of(0, 25), 1));
 
-        String view = controller.listIncidents(model, managerAuth);
+        String view = controller.listIncidents(null, null, model, managerAuth);
 
         assertEquals("incidents/list", view);
         assertEquals(true, model.getAttribute("hasReviewPrivilege"));
         assertNotNull(model.getAttribute("openIncidents"));
         assertNotNull(model.getAttribute("allIncidents"));
+        assertEquals(1L, model.getAttribute("totalElements"));
+        assertEquals("size=25", model.getAttribute("filterQuery"));
+    }
+
+    @Test
+    void listIncidents_requestedPageIsForwardedAndSizeIsValidated() {
+        Model model = new ConcurrentModel();
+        when(incidentService.getMyIncidents("manager@example.com")).thenReturn(List.of());
+        when(incidentService.getOpenIncidents()).thenReturn(List.of());
+        // The fixture total has to be at least the requested window, because
+        // PageImpl otherwise rewrites it to fit the rows it was given.
+        when(incidentService.getAllIncidentsPage(2, 10)).thenReturn(new PageImpl<>(
+                List.of(new PropertyIncident()), PageRequest.of(2, 10), 60));
+        when(incidentService.getAllIncidentsPage(0, 25)).thenReturn(new PageImpl<>(
+                List.of(), PageRequest.of(0, 25), 0));
+
+        controller.listIncidents(2, 10, model, managerAuth);
+        assertEquals(2, model.getAttribute("pageNumber"));
+        assertEquals(21, model.getAttribute("firstRow"));
+        assertEquals(30, model.getAttribute("lastRow"));
+
+        controller.listIncidents(0, 7, model, managerAuth);
+        verify(incidentService).getAllIncidentsPage(0, 25);
     }
 
     @Test

@@ -62,7 +62,7 @@
             </div>
 
             <!-- Filter tabs -->
-            <div style="margin-bottom: 20px; display: flex; gap: 8px;">
+            <div style="margin-bottom: 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <a th:href="@{/notifications(filter='all')}"
                    th:style="${currentFilter != 'unread' ? 'padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; background: #173b72; color: #ffffff;' : 'padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; background: #e4e9f2; color: #172033;'}">
                     All Notifications
@@ -72,6 +72,20 @@
                     Unread Only
                     <span th:if="${unreadCount != null and unreadCount > 0}" th:text="'(' + ${unreadCount} + ')'"></span>
                 </a>
+
+                <form method="get" th:action="@{/notifications}"
+                      style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                    <input type="hidden" name="filter" th:value="${currentFilter}">
+
+                    <label for="size" class="secondary-text">Rows per page</label>
+                    <select id="size" name="size" style="padding: 6px 10px;">
+                        <option th:each="option : ${pageSizes}"
+                                th:value="${option}" th:text="${option}"
+                                th:selected="${option == pageSize}"></option>
+                    </select>
+
+                    <button type="submit" class="action-button" style="padding: 6px 12px;">Apply</button>
+                </form>
             </div>
 
             <div class="table-wrapper">
@@ -122,12 +136,16 @@
 
                         <tr th:if="${#lists.isEmpty(notifications)}">
                             <td colspan="6" class="empty-state" style="padding: 30px; text-align: center; color: #6b7280;">
-                                No notifications found.
+                                <span th:text="${filtersActive}
+                                    ? 'You have no unread notifications.'
+                                    : 'No notifications found.'"></span>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <div th:replace="~{fragments/list-nav :: pager('/notifications')}"></div>
         </section>
     </main>
 </body>

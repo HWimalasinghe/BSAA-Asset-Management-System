@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>List controls</title>
+</head>
+<body>
+
+<!--
+    Shared controls for the paged lists.
+
+    Both fragments read the page state from the model that the list
+    controllers put there (filterQuery, sortKey, sortDirection, pageNumber,
+    totalPages, pageSize, totalElements, firstRow, lastRow, windowStart,
+    windowEnd), and take the list URL as their only argument, so a page needs
+    one line instead of a duplicated block of markup.
+
+    filterQuery already carries the active filters, the current order and the
+    page size, so the pager and any export link never lose the reader's place.
+    The column headers are built on headerQuery instead - the same filters
+    without an order - because each of those links names the order it is
+    switching to, and a browser that is sent sort twice keeps the first one.
+    The page number is added by the links themselves, which is also why
+    clicking a column header returns to the first page.
+-->
+
+<table>
+    <thead>
+    <tr>
+        <th th:fragment="sortableHeader(listUrl, label, key)"
+            th:with="active=${sortKey == key}"
+            class="sortable-header-cell">
+            <a class="sortable-header"
+               th:classappend="${active} ? ' sorted-' + ${sortDirection} : ''"
+               th:href="${listUrl} + '?' + ${headerQuery} + '&amp;sort=' + ${key} + '&amp;dir=' + (${active} ? (${sortDirection == 'asc'} ? 'desc' : 'asc') : 'asc')">
+                <span th:text="${label}"></span>
+                <span class="sort-arrow" th:if="${active}"
+                      th:text="${sortDirection == 'desc'} ? '▼' : '▲'"></span>
+            </a>
+        </th>
+    </tr>
+    </thead>
+</table>
+
+<div th:fragment="pager(listUrl)" class="list-pager" th:if="${totalElements > 0}">
+    <div class="result-summary" th:if="${firstRow > 0}">
+        Showing <strong th:text="${firstRow}"></strong>–<strong th:text="${lastRow}"></strong>
+        of <strong th:text="${totalElements}"></strong>
+    </div>
+
+    <nav class="pager-links" aria-label="Pagination" th:if="${totalPages > 1}">
+        <span th:if="${pageNumber == 0}" class="pager-link disabled">&#8249; Previous</span>
+        <a th:unless="${pageNumber == 0}" class="pager-link"
+           th:href="${listUrl} + '?' + ${filterQuery} + '&amp;page=' + ${pageNumber - 1}">&#8249; Previous</a>
+
+        <span th:each="page : ${#numbers.sequence(windowStart, windowEnd)}"
+              th:if="${page == pageNumber}"
+              class="pager-link current"
+              th:text="${page + 1}"
+              th:attr="aria-current='page'"></span>
+        <a th:each="page : ${#numbers.sequence(windowStart, windowEnd)}"
+           th:unless="${page == pageNumber}"
+           class="pager-link"
+           th:href="${listUrl} + '?' + ${filterQuery} + '&amp;page=' + ${page}">
+            <span th:text="${page + 1}"></span>
+        </a>
+
+        <span th:if="${pageNumber + 1 >= totalPages}" class="pager-link disabled">Next &#8250;</span>
+        <a th:unless="${pageNumber + 1 >= totalPages}" class="pager-link"
+           th:href="${listUrl} + '?' + ${filterQuery} + '&amp;page=' + ${pageNumber + 1}">Next &#8250;</a>
+    </nav>
+</div>
+
+</body>
+</html>

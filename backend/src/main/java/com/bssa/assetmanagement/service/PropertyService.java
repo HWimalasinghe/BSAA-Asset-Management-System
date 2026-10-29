@@ -10,11 +10,14 @@ import com.bssa.assetmanagement.repository.PhysicalAreaRepository;
 import com.bssa.assetmanagement.repository.PropertyRepository;
 import com.bssa.assetmanagement.repository.PropertyStatusHistoryRepository;
 import com.bssa.assetmanagement.repository.PropertyTypeRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -31,6 +34,32 @@ public class PropertyService {
             "LOST",
             "RETIRED"
     );
+
+    /**
+     * Sort keys offered by the asset register, keyed by the names used in the
+     * page's header links. Only these reach the query; the primary key is
+     * appended as a tiebreaker by {@link PagingSupport} so that rows sharing a
+     * value keep the same relative order from page to page.
+     */
+    public static final Map<String, String> ASSET_REGISTER_SORT_OPTIONS = Map.of(
+            "code", "propertyCode",
+            "type", "propertyType.name",
+            "category", "propertyType.category.name",
+            "area", "area.name",
+            "serial", "serialNumber",
+            "status", "status",
+            "condition", "condition",
+            "purchaseDate", "purchaseDate",
+            "registered", "propertyId"
+    );
+
+    public static final String ASSET_REGISTER_TIE_BREAKER = "propertyId";
+
+    /** Newest registration first, which is what the register showed before paging. */
+    public static final String DEFAULT_ASSET_REGISTER_SORT = "registered";
+
+    /** Longest search phrase accepted; a longer one is a mistake, not a use case. */
+    public static final int MAX_SEARCH_LENGTH = PagingSupport.MAX_SEARCH_LENGTH;
 
     private final PropertyRepository propertyRepository;
     private final PropertyTypeRepository propertyTypeRepository;
@@ -293,6 +322,133 @@ public class PropertyService {
 
     public List<PropertyStatusHistory> getStatusHistory(Long propertyId) {
         return statusHistoryRepository.findAllByProperty_PropertyIdOrderByHistoryIdDesc(propertyId);
+    }
+
+    /**
+     * One page of the asset register, narrowed by free-text search and any
+     * combination of filters. Search text, filter values, page number, page
+     * size and sort order are all validated here so that nothing typed into
+     * the address bar reaches the query unchecked.
+     *
+     * @throws IllegalArgumentException if a filter value is not recognised or
+     *                                  the date range is reversed
+     */
+    @Transactional(readOnly = true)
+    public Page<Property> searchProperties(
+            String search,
+            String status,
+            String condition,
+            Long categoryId,
+            Long propertyTypeId,
+            Long areaId,
+            LocalDate purchaseFrom,
+            LocalDate purchaseTo,
+            Integer page,
+            Integer size,
+            String sortKey,
+            String sortDirection) {
+
+        Pageable pageable = PagingSupport.pageRequest(
+                page, size, sortKey, sortDirection,
+                ASSET_REGISTER_SORT_OPTIONS, DEFAULT_ASSET_REGISTER_SORT, ASSET_REGISTER_TIE_BREAKER);
+
+        return queryRegister(search, status, condition, categoryId, propertyTypeId,
+                areaId, purchaseFrom, purchaseTo, pageable);
+    }
+
+    /**
+     * Every row matching the same search and filters, in the same order as the
+     * list. Used by the CSV export, which must contain exactly what the
+     * filtered list shows rather than one page of it.
+     */
+    @Transactional(readOnly = true)
+    public List<Property> findMatchingProperties(
+            String search,
+            String status,
+            String condition,
+            Long categoryId,
+            Long propertyTypeId,
+            Long areaId,
+            LocalDate purchaseFrom,
+            LocalDate purchaseTo,
+            String sortKey,
+            String sortDirection) {
+
+        Pageable pageable = Pageable.unpaged(PagingSupport.sort(
+                sortKey, sortDirection,
+                ASSET_REGISTER_SORT_OPTIONS, DEFAULT_ASSET_REGISTER_SORT, ASSET_REGISTER_TIE_BREAKER));
+
+        return queryRegister(search, status, condition, categoryId, propertyTypeId,
+                areaId, purchaseFrom, purchaseTo, pageable).getContent();
+    }
+
+    private Page<Property> queryRegister(
+            String search,
+            String status,
+            String condition,
+            Long categoryId,
+            Long propertyTypeId,
+            Long areaId,
+            LocalDate purchaseFrom,
+            LocalDate purchaseTo,
+            Pageable pageable) {
+
+        String term = PagingSupport.normalizedSearch(search, MAX_SEARCH_LENGTH);
+        String statusFilter = acceptedStatus(status);
+        String conditionFilter = acceptedCondition(condition);
+
+        if (statusFilter == null && status != null && !status.isBlank()) {
+            throw new IllegalArgumentException("Unrecognised status filter: " + status);
+        }
+        if (conditionFilter == null && condition != null && !condition.isBlank()) {
+            throw new IllegalArgumentException("Unrecognised condition filter: " + condition);
+        }
+        if (purchaseFrom != null && purchaseTo != null && purchaseFrom.isAfter(purchaseTo)) {
+            throw new IllegalArgumentException(
+                    "The start date must not be after the end date.");
+        }
+
+        return propertyRepository.findFilterPage(
+                term,
+                term == null ? null : PagingSupport.likePattern(term),
+                statusFilter,
+                conditionFilter,
+                positiveId(categoryId),
+                positiveId(propertyTypeId),
+                positiveId(areaId),
+                purchaseFrom,
+                purchaseTo,
+                pageable);
+    }
+
+    /**
+     * Filter values arrive from the address bar, where case is easy to get
+     * wrong; the query vocabulary itself is always upper-case.
+     */
+    private static String upperBound(String value) {
+        return value == null || value.isBlank() ? null : value.trim().toUpperCase();
+    }
+
+    /**
+     * The status as the register understands it, or null when it is blank or
+     * not one of the known statuses. Used to build the links a page hands back
+     * so that a rejected value is never echoed into them, and the query itself
+     * only ever sees a value from ALLOWED_STATUSES.
+     */
+    public static String acceptedStatus(String status) {
+        String value = upperBound(status);
+        return value != null && ALLOWED_STATUSES.contains(value) ? value : null;
+    }
+
+    /** As {@link #acceptedStatus(String)}, for the condition vocabulary. */
+    public static String acceptedCondition(String condition) {
+        String value = upperBound(condition);
+        return value != null && ALLOWED_CONDITIONS.contains(value) ? value : null;
+    }
+
+    /** Negative identifiers cannot exist, so they mean "no filter". */
+    private static Long positiveId(Long id) {
+        return id == null || id < 0 ? null : id;
     }
 
     private void validateStatusTransition(Property property, String newStatus) {

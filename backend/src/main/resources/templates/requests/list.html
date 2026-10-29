@@ -198,6 +198,18 @@
                     <h2>All Organizational Requests</h2>
                     <p>Review asset requests submitted across all departments.</p>
                 </div>
+
+                <form method="get" th:action="@{/requests}"
+                      style="display: flex; align-items: center; gap: 8px;">
+                    <label for="size" class="secondary-text">Rows per page</label>
+                    <select id="size" name="size" style="padding: 6px 10px;">
+                        <option th:each="option : ${pageSizes}"
+                                th:value="${option}" th:text="${option}"
+                                th:selected="${option == pageSize}"></option>
+                    </select>
+
+                    <button type="submit" class="action-button" style="padding: 6px 12px;">Apply</button>
+                </form>
             </div>
 
             <div class="table-wrapper">
@@ -264,6 +276,8 @@
                     </tbody>
                 </table>
             </div>
+
+            <div th:replace="~{fragments/list-nav :: pager('/requests')}"></div>
         </section>
     </main>
 </body>

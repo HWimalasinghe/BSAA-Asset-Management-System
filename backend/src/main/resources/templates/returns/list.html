@@ -53,17 +53,59 @@
                     </a>
                 </div>
 
+                <form class="list-filters" method="get" th:action="@{/returns}">
+                    <div class="filter-grid">
+                        <div class="filter-field filter-search">
+                            <label for="search">Search</label>
+                            <input id="search" name="search" type="search" th:value="${search}"
+                                   placeholder="Asset code, type, holder or receiver"
+                                   maxlength="100">
+                        </div>
+
+                        <div class="filter-field">
+                            <label for="condition">Condition at return</label>
+                            <select id="condition" name="condition">
+                                <option value="">All conditions</option>
+                                <option th:each="option : ${conditionOptions}"
+                                        th:value="${option}" th:text="${option}"
+                                        th:selected="${option == conditionFilter}"></option>
+                            </select>
+                        </div>
+
+                        <div class="filter-field filter-size">
+                            <label for="size">Rows per page</label>
+                            <select id="size" name="size">
+                                <option th:each="option : ${pageSizes}"
+                                        th:value="${option}" th:text="${option}"
+                                        th:selected="${option == pageSize}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Keep the current order when a filter is applied. -->
+                    <input type="hidden" name="sort" th:value="${sortKey}">
+                    <input type="hidden" name="dir" th:value="${sortDirection}">
+
+                    <div class="filter-actions">
+                        <button type="submit" class="primary-button">Apply filters</button>
+
+                        <a class="back-link" th:if="${filtersActive}" th:href="@{/returns}">
+                            Clear filters
+                        </a>
+                    </div>
+                </form>
+
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                         <tr>
                             <th style="text-align: left; padding: 12px;">Return ID</th>
-                            <th style="text-align: left; padding: 12px;">Property</th>
-                            <th style="text-align: left; padding: 12px;">Employee</th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/returns', 'Property', 'code')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/returns', 'Employee', 'holder')}"></th>
                             <th style="text-align: left; padding: 12px;">Returned By</th>
-                            <th style="text-align: left; padding: 12px;">Received By</th>
-                            <th style="text-align: left; padding: 12px;">Condition</th>
-                            <th style="text-align: left; padding: 12px;">Returned At</th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/returns', 'Received By', 'receiver')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/returns', 'Condition', 'condition')}"></th>
+                            <th th:replace="~{fragments/list-nav :: sortableHeader('/returns', 'Returned At', 'returned')}"></th>
                             <th style="text-align: left; padding: 12px;">Notes</th>
                         </tr>
                         </thead>
@@ -113,13 +155,16 @@
 
                         <tr th:if="${#lists.isEmpty(returns)}">
                             <td colspan="8"
-                                style="padding: 24px; text-align: center;">
-                                No property returns have been recorded yet.
-                            </td>
+                                style="padding: 24px; text-align: center;"
+                                th:text="${filtersActive}
+                                    ? 'No returns match this search or these filters.'
+                                    : 'No property returns have been recorded yet.'"></td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <div th:replace="~{fragments/list-nav :: pager('/returns')}"></div>
             </section>
         </main>
     </body>

@@ -14,6 +14,8 @@ import com.bssa.assetmanagement.repository.PropertyTypeRepository;
 import com.bssa.assetmanagement.service.PropertyRequestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -79,12 +81,15 @@ class PropertyRequestControllerTest {
         Model model = new ConcurrentModel();
         when(requestService.getMyRequests("staff@example.com")).thenReturn(List.of(new PropertyRequest()));
 
-        String view = controller.listRequests(model, staffAuth);
+        String view = controller.listRequests(null, null, model, staffAuth);
 
         assertEquals("requests/list", view);
         assertEquals(1, ((List<?>) model.getAttribute("myRequests")).size());
         assertEquals(false, model.getAttribute("hasReviewPrivilege"));
         assertNull(model.getAttribute("allRequests"));
+        // The organization-wide history is not read at all for a caller who is
+        // not allowed to see it.
+        verify(requestService, never()).getAllRequestsPage(any(), any());
     }
 
     @Test
@@ -93,15 +98,42 @@ class PropertyRequestControllerTest {
         when(requestService.getMyRequests("admin@example.com")).thenReturn(List.of(new PropertyRequest()));
         when(requestService.getPendingRequests()).thenReturn(List.of(new PropertyRequest()));
         when(requestService.countPendingRequests()).thenReturn(1L);
-        when(requestService.getAllRequests()).thenReturn(List.of(new PropertyRequest(), new PropertyRequest()));
+        when(requestService.getAllRequestsPage(null, 25)).thenReturn(new PageImpl<>(
+                List.of(new PropertyRequest(), new PropertyRequest()), PageRequest.of(0, 25), 2));
 
-        String view = controller.listRequests(model, adminAuth);
+        String view = controller.listRequests(null, null, model, adminAuth);
 
         assertEquals("requests/list", view);
         assertEquals(true, model.getAttribute("hasReviewPrivilege"));
         assertEquals(1, ((List<?>) model.getAttribute("pendingRequests")).size());
         assertEquals(1L, model.getAttribute("pendingCount"));
         assertEquals(2, ((List<?>) model.getAttribute("allRequests")).size());
+        assertEquals(2L, model.getAttribute("totalElements"));
+        assertEquals("size=25", model.getAttribute("filterQuery"));
+    }
+
+    @Test
+    void listRequests_requestedPageIsForwardedAndSizeIsValidated() {
+        Model model = new ConcurrentModel();
+        when(requestService.getMyRequests("admin@example.com")).thenReturn(List.of());
+        when(requestService.getPendingRequests()).thenReturn(List.of());
+        // The fixture total has to be at least the requested window, because
+        // PageImpl otherwise rewrites it to fit the rows it was given.
+        when(requestService.getAllRequestsPage(4, 100)).thenReturn(new PageImpl<>(
+                List.of(new PropertyRequest()), PageRequest.of(4, 100), 600));
+        when(requestService.getAllRequestsPage(0, 25)).thenReturn(new PageImpl<>(
+                List.of(), PageRequest.of(0, 25), 0));
+
+        controller.listRequests(4, 100, model, adminAuth);
+        assertEquals(4, model.getAttribute("pageNumber"));
+        assertEquals(401, model.getAttribute("firstRow"));
+        assertEquals(500, model.getAttribute("lastRow"));
+
+        // A page size the list does not offer is replaced by the default rather
+        // than being handed to the database.
+        controller.listRequests(0, 999, model, adminAuth);
+        verify(requestService).getAllRequestsPage(0, 25);
+        assertEquals(25, model.getAttribute("pageSize"));
     }
 
     @Test

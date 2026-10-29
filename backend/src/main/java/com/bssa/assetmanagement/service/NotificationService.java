@@ -4,6 +4,8 @@ import com.bssa.assetmanagement.entity.AppUser;
 import com.bssa.assetmanagement.entity.Notification;
 import com.bssa.assetmanagement.repository.AppUserRepository;
 import com.bssa.assetmanagement.repository.NotificationRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -126,16 +128,32 @@ public class NotificationService {
         }
     }
 
+    /**
+     * One page of somebody's own notifications.
+     *
+     * The order is fixed (newest first) because the page is an inbox, not a
+     * register, and the recipient filter is applied to the query rather than to
+     * the rows afterwards, so a reader never sees somebody else's alerts.
+     */
     @Transactional(readOnly = true)
-    public List<Notification> getNotificationsForUser(String userEmail) {
-        AppUser user = getActiveUser(userEmail);
-        return notificationRepository.findByUser_UserIdOrderByCreatedAtDesc(user.getUserId());
-    }
+    public Page<Notification> getNotificationsForUserPage(
+            String userEmail,
+            boolean unreadOnly,
+            Integer page,
+            Integer size) {
 
-    @Transactional(readOnly = true)
-    public List<Notification> getUnreadNotificationsForUser(String userEmail) {
         AppUser user = getActiveUser(userEmail);
-        return notificationRepository.findByUser_UserIdAndReadFalseOrderByCreatedAtDesc(user.getUserId());
+        PageRequest pageRequest = PageRequest.of(
+                PagingSupport.safePage(page),
+                PagingSupport.safeSize(size));
+
+        return unreadOnly
+                ? notificationRepository
+                        .findByUser_UserIdAndReadFalseOrderByCreatedAtDescNotificationIdDesc(
+                                user.getUserId(), pageRequest)
+                : notificationRepository
+                        .findByUser_UserIdOrderByCreatedAtDescNotificationIdDesc(
+                                user.getUserId(), pageRequest);
     }
 
     @Transactional(readOnly = true)

@@ -2,6 +2,8 @@ package com.bssa.assetmanagement.controller;
 
 import com.bssa.assetmanagement.entity.Notification;
 import com.bssa.assetmanagement.service.NotificationService;
+import com.bssa.assetmanagement.service.PagingSupport;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -13,11 +15,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.List;
-
 @Controller
 @RequestMapping("/notifications")
 public class NotificationController {
+
+    /** The only two views the inbox offers; anything else in the URL reads as "all". */
+    private static final String ALL_FILTER = "all";
+    private static final String UNREAD_FILTER = "unread";
 
     private final NotificationService notificationService;
 
@@ -27,24 +31,30 @@ public class NotificationController {
 
     @GetMapping
     public String listNotifications(
-            @RequestParam(required = false, defaultValue = "all") String filter,
+            @RequestParam(required = false, defaultValue = ALL_FILTER) String filter,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
             Authentication authentication,
             Model model) {
 
         String userEmail = authentication.getName();
-        List<Notification> notifications;
+        boolean unreadOnly = UNREAD_FILTER.equalsIgnoreCase(filter);
+        int pageSize = PagingSupport.safeSize(size);
 
-        if ("unread".equalsIgnoreCase(filter)) {
-            notifications = notificationService.getUnreadNotificationsForUser(userEmail);
-        } else {
-            notifications = notificationService.getNotificationsForUser(userEmail);
-        }
+        // The links on the page are rebuilt from the accepted filter, never from
+        // whatever the address bar happened to contain.
+        String filterQuery = ListPageView.query()
+                .add("filter", unreadOnly ? UNREAD_FILTER : ALL_FILTER)
+                .add("size", pageSize)
+                .toString();
 
-        long unreadCount = notificationService.getUnreadCountForUser(userEmail);
+        ListPageView.addPagingState(model, pageSize, filterQuery, unreadOnly);
+        model.addAttribute("currentFilter", unreadOnly ? UNREAD_FILTER : ALL_FILTER);
+        model.addAttribute("unreadCount", notificationService.getUnreadCountForUser(userEmail));
 
-        model.addAttribute("notifications", notifications);
-        model.addAttribute("unreadCount", unreadCount);
-        model.addAttribute("currentFilter", filter);
+        Page<Notification> notifications = notificationService.getNotificationsForUserPage(
+                userEmail, unreadOnly, page, pageSize);
+        ListPageView.addPageAttributes(model, "notifications", notifications);
 
         return "notifications/list";
     }
