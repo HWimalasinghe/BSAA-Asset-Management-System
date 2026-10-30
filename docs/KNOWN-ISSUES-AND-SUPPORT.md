@@ -152,6 +152,22 @@ requires them to be listed in the release notes with a rollback statement.
 employee codes, departments, asset locations, and who held what. The same care as a
 printed register applies; they belong on office machines.
 
+**L-21 — "reusable, not consumable" is a rule the application states but does not
+enforce.** The register is built for reusable units: `database/schema.sql` gives
+every `properties` row a unique `property_code`, a `serial_number`, a `condition`
+and a `status`, and every workflow — assignment, return, incident, status history —
+assumes that item comes back. There is no category flag, no quantity column, no
+reorder level and no consumable concept anywhere in `backend/src/main` or
+`database/schema.sql`, so a box of printer paper registered as an asset looks, to
+the software, exactly like a laptop: it can be issued, and then it sits in the
+register as "assigned" forever because nobody ever returns one.
+*Do instead:* the Inventory Admin decides what belongs in the register, and the
+category and type lists are the practical filter — create types for equipment that
+is issued and returned, and let consumables be handled wherever the office handles
+them today. If the office later wants consumable stock tracked properly, that is a
+new feature with its own tables (quantity on hand, issue quantity, reorder point),
+not a checkbox on the existing asset form.
+
 ### Operations
 
 **L-17 — backups cover the database only.** There is no file upload in the
@@ -171,7 +187,11 @@ archiver plugins** (`maven-archiver`, `plexus-archiver`, `commons-io` missing un
 `.m2`). `-o spring-boot:run` works offline and was used to start the application
 successfully. *Do instead:* run the packaged build with network access once on the
 server, or keep using `start-server.ps1`. Recorded in the
-`docs/DEPLOYMENT.md` troubleshooting table.
+`docs/DEPLOYMENT.md` troubleshooting table. Re-checked during acceptance: the
+offline form still fails naming exactly those three artifacts, and
+`.\mvnw.cmd -DskipTests package` with network produced
+`asset-management-0.0.1-SNAPSHOT.jar` (59,844,290 bytes) in 16 seconds — which was
+then started and served the office pages, so the limitation is offline-only.
 
 **L-20 — the test suite needs a real database, and writes to it.** Several
 `@SpringBootTest` classes run against the schema the configuration points at and
@@ -179,10 +199,13 @@ commit work (the concurrency proofs only mean something if two transactions real
 cross), so `mvnw test` cannot run on a machine with no MySQL, and there is no
 in-memory or container-based substitute configured. The classes create invented rows
 and delete them again — verified: 456 tests passed and the schema's row total was
-afterwards identical to that morning's backup. *Consequence:* nobody has set up
-automated CI for this project, and the first person to do it needs to give the
-pipeline a scratch schema rather than the office one. *Do instead:* run the suite
-before each release per `docs/RELEASE-PROCESS.md` §3.
+afterwards identical to that morning's backup. Re-counted during acceptance with
+two consecutive full runs of 509 tests: 42 rows immediately before the second run
+and 42 rows immediately after it, counted over every base table in the schema. The
+test suite still leaves the office data as it found it. *Consequence:* nobody has
+set up automated CI for this project, and the first person to do it needs to give
+the pipeline a scratch schema rather than the office one. *Do instead:* run the
+suite before each release per `docs/RELEASE-PROCESS.md` §3.
 
 ## 3. Items this installation did not finish (open, by design)
 
@@ -195,10 +218,11 @@ things to close after hand-over.
 | O-1 | **Host firewall rules for office computers** | `deploy\configure-firewall.ps1` is written, validated with `-WhatIf` (it prints the chosen adapter, the address, the DHCP and Public-profile warnings and the rule previews) but **not applied** — this session's shell is not elevated (`#Requires -RunAsAdministrator` refuses). Needs a machine administrator to run it. |
 | O-2 | **Database exposure** | MySQL listens on all interfaces (`bind-address` is not set in `C:\ProgramData\MySQL\MySQL Server 8.0\my.ini`), and two pre-existing inbound **allow** rules cover 3306 and 33060 on every profile (`{9D66050B-…}`, `{AFB59EA4-…}`). The script disables the unrestricted ones; restricting to the application host (or `bind-address = 127.0.0.1`) was **deliberately not executed** on a live office database — `docs/DEPLOYMENT.md` carries the exact change for the network administrator to apply. |
 | O-3 | **Reachability from a second physical computer** | Proven at host level: the application binds `:::8091`, and `/api/health` and `/login` both answered over the host's LAN address `172.28.24.143`, with a CSRF token in the login page. **Not** proven from another desk, because there is only one machine here. Someone must open `http://<host>:8080/login` from an office computer and sign in. |
-| O-4 | **The intended office network is undecided** | The host roamed between `192.168.216.0/24` (phone hotspot) and `172.28.0.0/19` (SLIIT-STD 3, a **Public** profile) during testing, and its address came from DHCP. A reserved address or DNS name, and a decision about which segment the system lives on, are prerequisites — `docs/DEPLOYMENT.md` has the fill-in table. |
+| O-4 | **The intended office network is undecided** | The host roamed between `192.168.216.0/24` (phone hotspot) and `172.28.0.0/19` (SLIIT-STD 3, a **Public** profile) during testing, and its address came from DHCP. A reserved address or DNS name, and a decision about which segment the system lives on, are prerequisites — `docs/DEPLOYMENT.md` has the fill-in table. Re-confirmed during acceptance: the address handed out on 2026-10-31 was `192.168.216.212`, where the earlier LAN verification had used `172.28.24.143` — so any bookmark or firewall rule written against a bare address is already stale. |
 | O-5 | **Backup schedule, off-server copy and named owners** | `deploy\backup-database.ps1` runs and is proven restorable, but the Task Scheduler entry, the destination for the off-server copy, and the names in §1 above are the office's to set. Retention deletion is opt-in by design. |
 | O-6 | **A second System Administrator** | See L-3. Recommended, not created, because it is direct database work on live data. |
-| O-7 | **Full build from a clean environment** | Not attempted: it would need the Maven artifacts downloaded and a spare machine. `docs/RELEASE-PROCESS.md` keeps it as a pre-release step. |
+| O-7 | **Full build from a clean environment** | Partly closed during acceptance: `./mvnw.cmd -DskipTests package` with network access was run here and produced the jar that then started and served the office pages (§4 below), so the build is not dependent on this project's state. What has **not** been done is a build on a machine with an empty local Maven repository and no `backend\target\`, which is what a fresh server will meet, and it still needs a spare machine. `docs/RELEASE-PROCESS.md` keeps it as a pre-release step. |
+| O-8 | **The name on screen says "BSAA", not "BSSA"** | Found during the acceptance review. Every page after sign-in writes **BSAA** — the browser tab title, the header, the footer, the dashboard's own text — 106 occurrences across 12 templates under `backend/src/main/resources/templates`, while `login.html` and all of the documentation write **BSSA**, which is what `spring.application.name`, the repository and this project's README use. It is a text defect, not a functional one: nothing breaks and no test asserts either spelling. **Not changed**, because a 106-place edit across every screen is a visible release change that should go in with the office's agreement on the correct spelling rather than as part of an acceptance pass. *Do:* confirm the company name, then replace `BSAA` with it in `templates/**`, re-run the suite (`mvnw test`) and read `docs/RELEASE-PROCESS.md` §5 before pushing it. |
 
 ## 4. What is verified, and how you can check it yourself
 
@@ -207,8 +231,14 @@ things to close after hand-over.
 | The setup documentation works | Followed literally on a fresh schema: `database/schema.sql` produced 20 tables, 4 roles, 10 physical areas, 3 categories, 0 departments, 0 users; the department insert then gave `department_id` 1, which is what `BOOTSTRAP_ADMIN_DEPARTMENT_ID` defaults to. All three ways of feeding the file in `docs/DEPLOYMENT.md` §4.1 were run this way and gave the same counts: the PowerShell pipe, `-e "SOURCE …"`, and `Start-Process -RedirectStandardInput`. Scratch schemas dropped afterwards. |
 | A backup restores | `docs/BACKUP-AND-RESTORE.md`: real dump 34,150 bytes → archive 5,453 bytes with a recorded SHA-256; scratch restore produced 20 tables / 42 rows; live vs restored counts identical; scratch schema then dropped. Run twice. |
 | The application serves the LAN | `docs/DEPLOYMENT.md`: startup log (`Tomcat started on port 8091`, `Database version: 8.0.46`), `netstat` listener `:::8091`, health `UP` and `/login` 200 over `172.28.24.143`. |
-| Authorization is server-side | `SecurityConfig` route rules plus controller/service checks; `backend/src/test/java/.../security/` (`SecurityAuthorizationTest`, `PropertySecurityTest`, `StateChangingRouteTest`, `WorkflowListAccessTest`, `AuthenticationFlowTest`) and the controller tests. |
-| The whole suite passes | 456 tests in 30 classes, 0 failures, 0 errors, 0 skipped, exit code 0 (`.\mvnw.cmd -o clean test`, 2026-10-30). |
+| The packaged jar - not only the Maven run path - starts and serves | `./mvnw.cmd -DskipTests package` (with network) → BUILD SUCCESS, `backend\target\asset-management-0.0.1-SNAPSHOT.jar` 59,844,290 bytes, repackaged with nested dependencies. `deploy\start-server.ps1 -Port 8091` chose that jar ("Starting asset-management-0.0.1-SNAPSHOT.jar"), the startup log shows `Tomcat started on port 8091 (http)` and `Started AssetManagementApplication in 11.809 seconds` against `Database version: 8.0.46`, and both `http://192.168.216.212:8091/api/health` (200, `{"application":"BSSA Asset Management System","status":"UP"}`) and `http://192.168.216.212:8091/login` (200, 2,103 bytes) were fetched **over the LAN address rather than localhost**. `stop-server.ps1` freed the port and no `asset-management` java process remained. The run's log and error log searched for `password`, `token`, `secret`, `bcrypt`: 0 matches. Repeated on port 8092. |
+| The start script names the process an operator should act on | The launcher PID and the JVM PID are different processes on this machine (36396 vs 6932, then 32784 vs 22120), which is why the script now prints the port's owner after the readiness check: the `Application : PID` line matched the PID `stop-server.ps1` reported stopping, both times. |
+| Authorization is server-side | `SecurityConfig` route rules plus controller/service checks; `backend/src/test/java/.../security/` (`SecurityAuthorizationTest`, `PropertySecurityTest`, `StateChangingRouteTest`, `WorkflowListAccessTest`, `AuthenticationFlowTest`, `ReferenceDataAccessTest`) and the controller tests. |
+| The four reference lists really are administrator-only | `ReferenceDataAccessTest` (6 tests) asks the live filter chain for every page and every write of `/departments`, `/physical-areas`, `/property-categories` and `/property-types`: anonymous goes to the sign-in page, Staff and Inventory Manager are refused each one with a valid CSRF token and nothing reaches the repository, and both administrator roles get the pages. The same URL answering 200 for an Inventory Admin and 403 for a Manager is what makes the check self-proving: if the rule were removed both would be 200. |
+| The reference lists' own flows work | `ReferenceDataCrudTest` (30 tests): create, edit, deactivate and reactivate for all four registers, with the refusals - blank name, duplicate name (asked case-insensitively, with the update check excluding the row's own name), a property type whose usage type is neither `COMMON` nor `INDIVIDUAL`, a type pointing at a deactivated or missing category, a name already taken in that category, and every path where the row behind an edit link no longer exists. Each refusal is asserted as the message the user is sent, not just as a redirect. |
+| No page sends a person to a screen that does not exist | `TemplateLinkRoutingTest` (6 tests) reads the route table from the controllers' own mappings and compares it with the 288 `@{...}` link expressions in the 36 shipped templates (67 distinct addresses), the URLs handed to the shared `list-nav` fragment's `pager()`/`sortableHeader()`, the stylesheets under `static/css`, every `<form>`'s target and every `<button>`'s type. Proven to bite: a temporary `@{/no-such-screen}` link made the scan fail and name the page; the probe was removed and the test passes again. Sign-out posts to `/logout`, which Spring Security registers rather than a controller, so it is the one address listed by hand and `AuthenticationFlowTest` is what proves it works. |
+| An error page shows nothing useful to an attacker | `ErrorPageExposureTest` (11 tests): Boot's error model is built twice from the same synthetic failure - once with the shipped defaults, which carries no `trace`, no `exception` key and none of the failure's own words, and once with `STACK_TRACE` explicitly asked for, which does, so the first assertion is measuring something real. The rendered page for a 500, a 404 and a 403 is then searched for stack frames, class names, SQL, JDBC text, credentials and filesystem paths. Proven to bite: a temporary `server.error.include-stacktrace=always` in `application.properties` made the configuration guard fail and name the property; it was removed again. |
+| The whole suite passes | 509 tests in 34 classes, 0 failures, 0 errors, 0 skipped, exit code 0 (`./mvnw.cmd -o clean test`, 2026-10-31). The 456 before it are still true; the difference is the four classes above. |
 | Configuration guards are enforced, not just documented | `DeploymentReadinessTest` (11 tests): `ddl-auto=none`, bootstrap off by default, SQL logging off, password from the environment with no default, no `server.address` pin, no credential in the tracked configuration or template, ignores in `.gitignore`, deployment scripts present, health payload carries nothing personal. Proven to bite: turning `show-sql` on made the suite fail with exit code 1. |
 | Logs hold no credentials | `spring.jpa.show-sql=false` in the shipped configuration; searching the captured logs for `password`, `token`, `secret` and `BCrypt` (case-insensitive, `Select-String`, command in `docs/DEPLOYMENT.md` §9) returns **0 matches** on the start/health-check/stop logs; `deploy\logs\` is git-ignored. Scope note: those runs contain no sign-in, so §9 says which part of the claim is code behaviour and which part is that search. |
 | Documented recovery SQL works | The statements in `docs/USER-GUIDE-SYSTEM-ADMINISTRATOR.md` §4–5 were executed against a scratch restore of a real backup. |

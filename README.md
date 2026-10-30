@@ -5,6 +5,16 @@ exists, who holds it, who asked for it, what happened to it. Server-rendered
 Spring Boot with Thymeleaf pages, one MySQL database, four roles, no separate
 frontend build.
 
+The register is for **reusable physical items**: one row per unit, each with its
+own property code, serial number, condition and status, so it can be issued,
+returned, damaged, repaired and traced. Consumables — printer paper, toner,
+stationery, cleaning and kitchen supplies — are out of scope. They are used up on
+issue, so there is nothing to assign or take back, and the application keeps no
+quantity, reorder point or stock figure for anything. Nothing in the software
+*stops* somebody registering a box of gloves as an asset; that judgement belongs
+to the Inventory Admin, and the boundary is recorded as limitation **L-21** in
+[`docs/KNOWN-ISSUES-AND-SUPPORT.md`](docs/KNOWN-ISSUES-AND-SUPPORT.md).
+
 Application version: `0.0.1-SNAPSHOT` (`backend/pom.xml`). See
 [`CHANGELOG.md`](CHANGELOG.md).
 

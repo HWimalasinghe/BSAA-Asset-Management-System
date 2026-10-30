@@ -239,8 +239,15 @@ All commands run from the repository root in PowerShell.
 ```powershell
 cd backend
 .\mvnw.cmd -o clean test        # the whole suite; must end with BUILD SUCCESS
-.\mvnw.cmd -o clean package     # builds target\*.jar (needs network or a full local repository)
+.\mvnw.cmd clean package        # builds target\*.jar - needs network (L-19: the
+                                # offline form cannot resolve the packaging plug-in)
 ```
+
+The offline `-o clean package` form fails here for three plug-in artifacts that are
+not in the local repository; the same command with network access produced
+`target\asset-management-0.0.1-SNAPSHOT.jar` (59,844,290 bytes, repackaged with
+nested dependencies) in 16 seconds. Do the packaged build on a machine with
+network, then copy or build on the server.
 
 Start and stop with the scripts in `deploy\`, which handle the environment, the
 log files and the readiness check:
@@ -254,7 +261,16 @@ log files and the readiness check:
 `start-server.ps1` prefers `backend\target\*.jar` and falls back to
 `.\mvnw.cmd -o spring-boot:run` when there is no jar. Both paths were run on this
 server: from a cold start the application answers within about 10 seconds, and
-the script waits up to 180 seconds before giving up.
+the script waits up to 180 seconds before giving up. The jar path is what the most
+recent runs used, because a jar has been built since.
+
+The script prints two process numbers and only one of them is useful. "Launch
+request accepted (launcher PID …)" is the process the script started, which on the
+default Java install is a launcher rather than the application; "Application : PID
+…" is the process that really holds the port, taken from the port after the health
+check answers. It is that second number to look at in Task Manager, and it is what
+`stop-server.ps1` finds. Use `stop-server.ps1` rather than `taskkill`, because it
+refuses a port owner it does not recognise.
 
 What the script does when it cannot start: it prints the log file name. Start
 there, not with guesses.

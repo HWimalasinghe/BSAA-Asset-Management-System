@@ -7,7 +7,7 @@ running the old schema.
 Rollback statement: how to undo the change if the release goes wrong. See
 `docs/RELEASE-PROCESS.md` §10 for the procedure it belongs to.
 
-## [Unreleased] — deployment, backup and documentation work
+## [Unreleased] — deployment, backup, documentation and final acceptance work
 
 Artifact version is still `0.0.1-SNAPSHOT` (`backend/pom.xml`); nothing here has
 been tagged.
@@ -48,6 +48,27 @@ been tagged.
   or from the running system — `docs/KNOWN-ISSUES-AND-SUPPORT.md` §4 lists how each
   claim can be re-checked.
 - `CHANGELOG.md` (this file).
+- Acceptance tests for the four checklist items that had no automated evidence.
+  None of them needed a change to application code — each one found the behaviour
+  already correct and pinned it down.
+  - `controller/ReferenceDataCrudTest.java` (30 tests) — create, view, update and
+    deactivate for departments, physical areas, property categories and property
+    types, including the duplicate-name refusals, the blank-name refusals,
+    `Invalid usage type.`, the inactive-category refusal and the missing-row
+    messages.
+  - `security/ReferenceDataAccessTest.java` (6 tests) — the same 24 routes through
+    the real filter chain: Staff and Inventory Manager are refused every page and
+    every write, and the refusal provably saves nothing.
+  - `controller/TemplateLinkRoutingTest.java` (6 tests) — reads all 36 templates,
+    resolves their 288 `@{...}` links and checks each against the routes the
+    controllers actually register, plus form targets, button types and stylesheet
+    paths. **Verified by breaking it on purpose**: one invented link in
+    `dashboard.html` fails it.
+  - `ErrorPageExposureTest.java` (11 tests) — the error page and the model behind
+    it carry no stack trace, exception name, SQL, connection string, file path or
+    credential, and the shipped configuration leaves `server.error.*` alone.
+    **Verified by breaking it on purpose**: setting
+    `server.error.include-stacktrace=always` fails it.
 
 ### Changed
 
@@ -57,6 +78,28 @@ been tagged.
   console log. A developer overrides with `SPRING_JPA_SHOW_SQL=true`; no file edit
   needed.
   *Rollback:* delete the two lines, or set `SPRING_JPA_SHOW_SQL=true`. No data effect.
+- `README.md` — a scope paragraph stating that the register holds reusable physical
+  items and that consumables are out of scope, pointing at limitation `L-21`.
+  *Rollback:* delete the paragraph. No data effect.
+- `docs/KNOWN-ISSUES-AND-SUPPORT.md` — `L-21` and `O-8` added, the seven new
+  evidence rows in §4, and `L-19`/`L-20` re-measured. Documentation only.
+  *Rollback:* revert the file. No data effect.
+- `deploy/start-server.ps1` — now prints the process that really holds the port
+  ("Application : PID …", read from `Get-NetTCPConnection` once the health check
+  answers) as well as the launcher's number. Those are two different processes when
+  `java` on PATH is the Oracle `javapath` launcher, which is the default install: an
+  operator who acted on the old single line would have been watching, or stopping,
+  a process that was not the application. Console output only — how the application
+  is started is unchanged. **Verified**: jar start on ports 8091 and 8092; launcher
+  PIDs 36396 and 32784, JVM PIDs 6932 and 22120, and `stop-server.ps1` stopped the
+  PID the script printed in both runs.
+  *Rollback:* delete the `$owningProcessIds` block and put back the one
+  `Write-Host "Process started (PID …)"` line. No data effect.
+- `docs/DEPLOYMENT.md` §5 — records that the packaged-jar build works with network
+  access (so `L-19` is an offline-only limitation) and explains the two process
+  numbers the start script prints. `docs/KNOWN-ISSUES-AND-SUPPORT.md` §4 — three
+  further evidence rows. Documentation only.
+  *Rollback:* revert the two files. No data effect.
 
 ### Known issues created, found or carried by this work
 
@@ -69,13 +112,15 @@ no self-approval (`L-8`), in-app notifications only (`L-9`), HTTP without TLS
 (`L-12`), nothing is deleted (`L-13`), `audit_logs` never written (`L-14`), no
 migration tool (`L-15`), exports contain personal data (`L-16`), database-only
 backups (`L-17`), force-stop on shutdown (`L-18`), offline `package` build failure
-(`L-19`).
+(`L-19`), and the reusable-not-consumable boundary being a rule for the Inventory
+Admin rather than something the software enforces (`L-21`).
 
 Open items that need somebody with more access than a build machine: apply the
 firewall rules (`O-1`), restrict database exposure (`O-2`), sign in from a second
 physical computer (`O-3`), decide the office network and give the host a reserved
 address (`O-4`), schedule backups and name the owners (`O-5`), create a second
-System Administrator (`O-6`), verify from a clean environment (`O-7`).
+System Administrator (`O-6`), verify from a clean environment (`O-7`), and confirm
+which spelling of the organisation's name the screens should carry (`O-8`).
 
 ### Schema
 

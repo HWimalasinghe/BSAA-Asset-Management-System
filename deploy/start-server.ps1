@@ -91,7 +91,13 @@ $process = Start-Process -FilePath $executable `
     -RedirectStandardError $stderrLog `
     -PassThru
 
-Write-Host "Process started (PID $($process.Id)). Output: $stdoutLog"
+# The PID Start-Process reports is the process it launched, which on the default
+# Oracle install is the javapath launcher: it starts the real runtime as its child
+# and waits for it, so it lives as long as the application does but is not the
+# process holding the port. The summary below asks the port who owns it and prints
+# that number, because it is the one to look at in Task Manager and the one
+# stop-server.ps1 matches.
+Write-Host "Launch request accepted (launcher PID $($process.Id)). Output: $stdoutLog"
 
 # The application needs a database connection and an EntityManager before it
 # answers anything, which on a cold server takes well over ten seconds. Polling
@@ -137,6 +143,17 @@ foreach ($address in $lanAddresses) {
     Write-Host "  Office users : http://${address}:$Port/login"
 }
 Write-Host "  Health probe : $healthUrl"
+
+# Ask the port who owns it now rather than repeating the launcher's number: this
+# is the process stop-server.ps1 will match, and the one to look at in Task
+# Manager if the office is told to close the application by hand.
+$owningProcessIds = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue |
+    Select-Object -ExpandProperty OwningProcess -Unique
+
+if ($owningProcessIds) {
+    Write-Host "  Application  : PID $($owningProcessIds -join ', ')"
+}
+
 Write-Host "  Stop with    : .\deploy\stop-server.ps1 -Port $Port"
 Write-Host ""
 if (-not $env:SERVER_ADDRESS -or $env:SERVER_ADDRESS.Trim() -eq '') {
