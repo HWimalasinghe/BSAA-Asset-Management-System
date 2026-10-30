@@ -1,0 +1,29 @@
+# Local machine files and secrets. Nothing in this list may be committed:
+# each entry holds either a credential, office data, or somebody's machine state.
+
+# Credentials and per-machine configuration (see deploy/env.example.ps1)
+.env
+.env.*
+*.env
+deploy/env.local.ps1
+# ...but the placeholder template that tells an operator what to set is tracked.
+!.env.example
+
+# Database dumps and backups, which contain staff names, emails and asset records
+backups/
+*.dump.sql
+*.sql.gz
+*.sql.zip
+
+# Application logs
+logs/
+*.log
+
+# Operating system and editor state
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+
+# Maven wrapper download cache (the jar itself is ignored under backend/)
+.mvn/wrapper/maven-wrapper.jar

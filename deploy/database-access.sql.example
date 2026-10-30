@@ -1,0 +1,74 @@
+-- ---------------------------------------------------------------------------
+-- Least-privilege database accounts for the office deployment.
+--
+-- PLACEHOLDERS ONLY. Copy this file to a name that .gitignore already excludes
+-- (for example deploy\database-access.local.sql), replace each
+-- __REPLACE_ME__ token, run it as an administrator, then delete the copy.
+-- Never commit a filled-in version and never paste a real password into an
+-- issue, chat message or commit message.
+--
+-- Two accounts, because the application and the backup job need different
+-- things, and giving the application a dump-capable account would let a stolen
+-- app credential leave the building with every staff record in it.
+-- ---------------------------------------------------------------------------
+
+-- 1. The account the application runs as.
+--    'localhost' restricts it to connections from the server itself, which is
+--    what a same-host deployment needs and is the real control behind the
+--    bind-address/firewall guidance in docs\DEPLOYMENT.md. Use '%' only when
+--    the database genuinely lives on another machine, and then name that host
+--    explicitly (for example 'bssa-app-server') instead of a wildcard.
+CREATE USER 'bssa_asset_app'@'localhost'
+    IDENTIFIED BY '__REPLACE_ME__';
+
+-- Data manipulation only. The schema itself is never touched at run time:
+-- spring.jpa.hibernate.ddl-auto=none, and migrations are applied by hand.
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON bssa_asset_management.*
+    TO 'bssa_asset_app'@'localhost';
+
+-- The workflow reads and writes within transactions and relies on the
+-- database's REPEATABLE READ snapshot plus row locks (see
+-- PropertyRepository.findByPropertyIdForUpdate), so the application account
+-- must not be given privileges that take statements out of transactions.
+
+-- 2. The account the nightly dump runs as.
+--    mysqldump needs more than SELECT, but it needs nothing that writes.
+CREATE USER 'bssa_asset_backup'@'localhost'
+    IDENTIFIED BY '__REPLACE_ME__';
+
+GRANT SELECT, SHOW VIEW, TRIGGER, EVENT, LOCK TABLES, PROCESS
+    ON *.*
+    TO 'bssa_asset_backup'@'localhost';
+
+-- The two roles are separate on purpose: PROCESS and SHOW VIEW are global in
+-- MySQL, so a dump account cannot be confined to one schema. Keep it on the
+-- server, keep its password out of the application's environment.
+
+FLUSH PRIVILEGES;
+
+-- ---------------------------------------------------------------------------
+-- Verify what was granted, then prove the application account cannot do what
+-- it should not be able to.
+-- ---------------------------------------------------------------------------
+SHOW GRANTS FOR 'bssa_asset_app'@'localhost';
+SHOW GRANTS FOR 'bssa_asset_backup'@'localhost';
+
+-- Expected: this succeeds
+--     mysql -u bssa_asset_app -p -e "SELECT COUNT(*) FROM bssa_asset_management.users;"
+-- Expected: this fails with an access error, which is the point
+--     mysql -u bssa_asset_app -p -e "DROP TABLE bssa_asset_management.audit_logs;"
+-- Expected: this also fails, because the account is only defined for localhost
+--     mysql -h <server-lan-ip> -u bssa_asset_app -p -e "SELECT 1;"
+
+-- ---------------------------------------------------------------------------
+-- Housekeeping the office should schedule rather than remember
+-- ---------------------------------------------------------------------------
+-- Password expiry is left to site policy; the statement is here so it is a
+-- decision rather than an oversight.
+-- ALTER USER 'bssa_asset_app'@'localhost'
+--     PASSWORD EXPIRE INTERVAL 360 DAY;
+
+-- If the application is ever moved off this host, replace the two localhost
+-- accounts with host-specific ones instead of widening '%' :
+-- RENAME USER 'bssa_asset_app'@'localhost' TO 'bssa_asset_app'@'192.168.216.50';
